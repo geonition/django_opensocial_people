@@ -29,7 +29,7 @@ def people(request, **kwargs):
         else:
             return HttpResponseForbidden("The user needs to be authenticated to make this request")
         
-    return people_not_implemented(request)
+    return people_not_implemented()
 
 
 def create_relationship(request, initial_user, relationship_type):

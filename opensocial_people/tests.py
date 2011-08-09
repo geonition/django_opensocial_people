@@ -11,10 +11,9 @@ class PeopleTest(TestCase):
         self.user2 = User.objects.create_user('user2', 'test2@test.com', 'user2')
         self.user3 = User.objects.create_user('user3', 'test3@test.com', 'user3')    
         self.user4 = User.objects.create_user('user4', 'test4@test.com', 'user4')
-        self.group1 = Group(name='@friends')
+        
+        self.group1 = Group(name='@family')
         self.group1.save()
-        self.group2 = Group(name='family')
-        self.group2.save()
     
     def test_people_rest(self):
         base_url = reverse('people')
@@ -63,7 +62,7 @@ class PeopleTest(TestCase):
         
         # test success with other group
         # post to /people/@me/family with target person as post content
-        url = "%s%s" % (reverse('people'), "/@me/family")
+        url = "%s%s" % (reverse('people'), "/@me/@family")
         response = self.client.post(url,
                                     {'id': 'user2',
                                      'displayName': '',
@@ -166,7 +165,6 @@ class PeopleTest(TestCase):
         self.user3.delete()
         self.user4.delete()
         self.group1.delete()
-        self.group2.delete()
         
         
         
