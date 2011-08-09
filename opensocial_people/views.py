@@ -1,11 +1,5 @@
-from django.http import HttpResponse
-from django.http import HttpResponseBadRequest
 from django.http import HttpResponseForbidden
 from django.http import HttpResponseNotFound
-from django.http import HttpResponseRedirect
-from django.utils import translation
-from django.shortcuts import render_to_response
-from django.template import RequestContext
 from django.contrib.auth.models import User
 from django.contrib.auth.models import Group
 from django.db.utils import IntegrityError
@@ -14,18 +8,12 @@ from geonition_utils.HttpResponseExtenders import HttpResponseNotImplemented
 from geonition_utils.HttpResponseExtenders import HttpResponseCreated
 from geonition_utils.HttpResponseExtenders import HttpResponseConflict
 from models import Relationship
-import logging
-import sys
 
-if sys.version_info >= (2, 6):
-    import json
-else:
-    import simplejson as json
-
-def people(request, *args, **kwargs):
+def people(request, **kwargs):
     """
     This function handles the people service requests
     """
+    
     if request.method == 'GET':
         pass
     elif request.method == 'POST':
@@ -34,20 +22,8 @@ def people(request, *args, **kwargs):
             initial_user = kwargs.get('user', None)
             relationship_type = kwargs.get('group', None)
             
-            if initial_user == None:
-                initial_user = args[0]
-                
-                if relationship_type == None and len(args) > 1:
-                    relationship_type = args[1]
-                elif relationship_type == None:
-                    relationship_type = '@friends'
-            
-            elif relationship_type == None:
-                relationship_type = args[0]
-            
             if initial_user != '@me' and request.user.username != initial_user:
                 return HttpResponseForbidden("You are not allowed to create this relationship")
-                
                 
             return create_relationship(request, initial_user, relationship_type)
         else:
@@ -57,6 +33,8 @@ def people(request, *args, **kwargs):
 
 
 def create_relationship(request, initial_user, relationship_type):
+    """ This function creates a realtionship from intial_user with
+    relation_type to target user that is in the request.POST payload """
     
     iuser = None
     if initial_user == '@me':
@@ -82,6 +60,7 @@ def create_relationship(request, initial_user, relationship_type):
     relationship = Relationship(user_id = iuser,
                                 group_id = gtype,
                                 person = tuser)
+    
     sid = transaction.savepoint()
     try:
         relationship.save()
@@ -92,5 +71,7 @@ def create_relationship(request, initial_user, relationship_type):
         transaction.savepoint_rollback(sid)
         return HttpResponseConflict("This relationship already exists")
 
-def people_not_implemented(request):
+def people_not_implemented():
+    """ This function returns people service specific message for not
+    implemented feature """
     return HttpResponseNotImplemented("This part of people service is not implemented")

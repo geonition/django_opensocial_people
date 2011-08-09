@@ -3,13 +3,6 @@ from django.test.client import Client
 from django.core.urlresolvers import reverse
 from django.contrib.auth.models import User
 from django.contrib.auth.models import Group
-
-import sys
-
-if sys.version_info >= (2, 6):
-    import json
-else:
-    import simplejson as json
     
 class PeopleTest(TestCase):
     def setUp(self):
@@ -69,7 +62,7 @@ class PeopleTest(TestCase):
         
         
         # test success with other group
-        # post to /people/user1/@family with target person as post content
+        # post to /people/@me/family with target person as post content
         url = "%s%s" % (reverse('people'), "/@me/family")
         response = self.client.post(url,
                                     {'id': 'user2',
@@ -151,6 +144,19 @@ class PeopleTest(TestCase):
         self.assertEquals(response.status_code,
                           403,
                           "Creating relationship for other users did not return 403 forbidden")
+        
+        #try to create relationship for not existing user also other then @me
+        url = "%s%s" % (reverse('people'), "/no_user/@friends")
+        response = self.client.post(url,
+                                    {'id': 'user3',
+                                     'displayName': '',
+                                     'thumbnailUrl': ''})
+        
+        self.assertEquals(response.status_code,
+                          403,
+                          "Creating relationship for other users did not return 403 forbidden")
+        
+        
         
         
     def tearDown(self):
