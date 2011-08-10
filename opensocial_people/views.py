@@ -7,6 +7,7 @@ from django.db import transaction
 from geonition_utils.HttpResponseExtenders import HttpResponseNotImplemented
 from geonition_utils.HttpResponseExtenders import HttpResponseCreated
 from geonition_utils.HttpResponseExtenders import HttpResponseConflict
+from geonition_utils.HttpResponseExtenders import HttpResponseUnauthorized
 from models import Relationship
 
 def people(request, **kwargs):
@@ -21,13 +22,10 @@ def people(request, **kwargs):
         if request.user.is_authenticated():
             initial_user = kwargs.get('user', None)
             relationship_type = kwargs.get('group', None)
-            
-            if initial_user != '@me' and request.user.username != initial_user:
-                return HttpResponseForbidden("You are not allowed to create this relationship")
                 
             return create_relationship(request, initial_user, relationship_type)
         else:
-            return HttpResponseForbidden("The user needs to be authenticated to make this request")
+            return HttpResponseUnauthorized("The user needs to be authenticated to make this request")
         
     return people_not_implemented()
 
@@ -36,15 +34,12 @@ def create_relationship(request, initial_user, relationship_type):
     """ This function creates a realtionship from intial_user with
     relation_type to target user that is in the request.POST payload """
     
-    iuser = None
-    if initial_user == '@me':
-        iuser = request.user
-    else:
-        try:
-            iuser = User.objects.get(username = initial_user)
-        except User.DoesNotExist:
-            return HttpResponseNotFound("The specified user was not found")
-            
+    #the user is only allowed to create relationships for him/herself            
+    if initial_user != '@me' and request.user.username != initial_user:
+        return HttpResponseForbidden("You are not allowed to create this relationship")
+
+    iuser = request.user #should always be @me or the username of @me
+    
     gtype = None
     try:
         gtype = Group.objects.get(name = relationship_type)
