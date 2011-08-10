@@ -41,8 +41,8 @@ class PeopleTest(TestCase):
                                      'thumbnailUrl': ''})
         
         self.assertEquals(response.status_code,
-                          403,
-                          "The post request without authentication did not return 403 Forbidden")
+                          401,
+                          "The post request without authentication did not return 401 Unauthorized")
         
         # authenticate user
         self.client.login(username='user1', password='user1')
