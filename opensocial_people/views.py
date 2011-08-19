@@ -69,4 +69,4 @@ def create_relationship(request, initial_user, relationship_type):
 def people_not_implemented():
     """ This function returns people service specific message for not
     implemented feature """
-    return HttpResponseNotImplemented("This part of people service is not implemented")
+    return HttpResponseNotImplemented("This part of people service has not been implemented")
