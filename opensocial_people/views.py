@@ -14,14 +14,29 @@ def people(request, **kwargs):
     """
     This function handles the people service requests
     """
+    #get the values
+    user = kwargs.get('user', None)
+    group = kwargs.get('group', None)
     
+    #process the request method
     if request.method == 'GET':
-        pass
+        
+        if user == '@me' and request.user.is_authenticated():
+            person_object = request.user
+        
+        elif request.user.is_authenticated():
+            person_object = User.objects.get(username=user)
+        
+        else:
+            return HttpResponseForbidden("You need to sign in to make requests")
+        
+        #TODO
+        
     elif request.method == 'POST':
         
         if request.user.is_authenticated():
-            initial_user = kwargs.get('user', None)
-            relationship_type = kwargs.get('group', None)
+            initial_user = user
+            relationship_type = group
                 
             return create_relationship(request, initial_user, relationship_type)
         else:
@@ -40,11 +55,7 @@ def create_relationship(request, initial_user, relationship_type):
 
     iuser = request.user #should always be @me or the username of @me
     
-    gtype = None
-    try:
-        gtype = Group.objects.get(name = relationship_type)
-    except Group.DoesNotExist:
-        return HttpResponseNotFound("The specified group was not found")
+    gtype = relationship_type
     
     tuser = None
     try:

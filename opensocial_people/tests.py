@@ -3,6 +3,8 @@ from django.test.client import Client
 from django.core.urlresolvers import reverse
 from django.contrib.auth.models import User
 from django.contrib.auth.models import Group
+
+import json
     
 class PeopleTest(TestCase):
     def setUp(self):
@@ -30,6 +32,50 @@ class PeopleTest(TestCase):
         
         url = "%s%s" % (base_url, "/@me/@friends")
         self.client.get(url)
+        
+    def test_people_get(self):
+        
+        #get person without beeing authenticated
+        url = "%s%s" % (reverse('people'), "/@me/@self")
+        response = self.client.get(url)
+        
+        self.assertEquals(response.status_code,
+                        403,
+                        "The user should not be able to query data without beeing authenticated")
+        
+        
+        #authenticate and get person
+        self.client.login(username='user1', password='user1')
+        
+        #query the authenticated users information
+        url = "%s%s" % (reverse('people'), "/@me/@self")
+        response = self.client.get(url)
+        
+        self.assertContains(response,
+                            '"id":',
+                            status_code=200)
+        self.assertContains(response,
+                            '"displayName":',
+                            status_code=200)
+        
+        url = "%s%s" % (reverse('people'), "/user1/@self")
+        response = self.client.get(url)
+        
+        self.assertContains(response,
+                            '"id":',
+                            status_code=200)
+        self.assertContains(response,
+                            '"displayName":',
+                            status_code=200)
+        
+        #query other persons
+        url = "%s%s" % (reverse('people'), "/user2/@self")
+        response = self.client.get(url)
+        
+        self.assertEquals(response.status_code,
+                        403,
+                        "The user should not be able to query other persons without permissions")
+        
         
     def test_relationship_create(self):
         # if the user is not authenticated it cannot create relationships
@@ -73,7 +119,7 @@ class PeopleTest(TestCase):
                           "The create relationship request did not return 201 created")
         
         
-        # test creation with not existing group
+        # test creation with not existing group, should not matter and returns 201
         url = "%s%s" % (reverse('people'), "/@me/no_group")
         response = self.client.post(url,
                                     {'id': 'user2',
@@ -81,8 +127,8 @@ class PeopleTest(TestCase):
                                      'thumbnailUrl': ''})
         
         self.assertEquals(response.status_code,
-                          404,
-                          "Creating relationship with non existing group did not return 404 not found")
+                          201,
+                          "Creating relationship with non existing group did not return 201 created")
         
         
         # test creation with not existing user
