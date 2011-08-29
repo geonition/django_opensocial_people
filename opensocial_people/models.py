@@ -8,7 +8,7 @@ class Relationship(models.Model):
     
     
     user_id = models.ForeignKey(User, related_name='initial_user')
-    group_id = models.ForeignKey(Group, related_name='relationship_group')
+    group_id = models.CharField(max_length = 10)
     person = models.ForeignKey(User, related_name='target_user')
     
     class Meta:
