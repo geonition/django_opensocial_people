@@ -3,8 +3,7 @@ from django.test.client import Client
 from django.core.urlresolvers import reverse
 from django.contrib.auth.models import User
 from django.contrib.auth.models import Group
-
-import json
+from django.utils import simplejson as json
     
 class PeopleTest(TestCase):
     def setUp(self):
