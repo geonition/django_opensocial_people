@@ -2,37 +2,45 @@ from django.http import HttpResponseForbidden
 from django.http import HttpResponseNotFound
 from django.contrib.auth.models import User
 from django.contrib.auth.models import Group
+from django.core import serializers
 from django.db.utils import IntegrityError
 from django.db import transaction
+from django.utils import simplejson as json
 from geonition_utils.HttpResponseExtenders import HttpResponseNotImplemented
 from geonition_utils.HttpResponseExtenders import HttpResponseCreated
 from geonition_utils.HttpResponseExtenders import HttpResponseConflict
 from geonition_utils.HttpResponseExtenders import HttpResponseUnauthorized
+from geonition_utils.views import RequestHandler
 from models import Relationship
-
-def people(request, **kwargs):
-    """
-    This function handles the people service requests
-    """
-    #get the values
-    user = kwargs.get('user', None)
-    group = kwargs.get('group', None)
     
-    #process the request method
-    if request.method == 'GET':
+class People(RequestHandler):
+    
+    def __init__(self):
+        pass
+    
+    def get(self, request, *args, **kwargs):
         
+        #get the values
+        user = kwargs.get('user', None)
+        group = kwargs.get('group', None)
+                    
         if user == '@me' and request.user.is_authenticated():
             person_object = request.user
-        
+            
         elif request.user.is_authenticated():
             person_object = User.objects.get(username=user)
-        
+            
         else:
             return HttpResponseForbidden("You need to sign in to make requests")
         
-        #TODO
         
-    elif request.method == 'POST':
+        
+        
+    
+def people(request, **kwargs):
+        
+        
+    if request.method == 'POST':
         
         if request.user.is_authenticated():
             initial_user = user
