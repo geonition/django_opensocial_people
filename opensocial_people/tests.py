@@ -28,6 +28,10 @@ class PeopleTest(TestCase):
         self.user1.save()
     
     def test_people_rest(self):
+        """
+        These functions will throw an error
+        if urls are not set.
+        """
         base_url = reverse('people')
         self.client.get(base_url)
         
