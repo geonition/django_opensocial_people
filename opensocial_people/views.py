@@ -35,7 +35,12 @@ class People(RequestHandler):
         
         return HttpResponseNotImplemented("no not yet!")
         
-    def post(self):
+    def post(self, request, *args, **kwargs):
+        
+        #get the values
+        user = kwargs.get('user', None)
+        group = kwargs.get('group', None)
+        
         if request.user.is_authenticated():
             initial_user = user
             relationship_type = group
@@ -43,7 +48,7 @@ class People(RequestHandler):
             return create_relationship(request, initial_user, relationship_type)
         else:
             return HttpResponseUnauthorized("The user needs to be authenticated to make this request")
-        
+            
 
 def create_relationship(request, initial_user, relationship_type):
     """ This function creates a realtionship from intial_user with
