@@ -1,10 +1,12 @@
 from django.http import HttpResponseForbidden
 from django.http import HttpResponseNotFound
+from django.http import HttpResponse
 from django.contrib.auth.models import User
 from django.contrib.auth.models import Group
 from django.core import serializers
 from django.db.utils import IntegrityError
 from django.db import transaction
+from django.db.models import Q
 from django.utils import simplejson as json
 from geonition_utils.HttpResponseExtenders import HttpResponseNotImplemented
 from geonition_utils.HttpResponseExtenders import HttpResponseCreated
@@ -12,6 +14,8 @@ from geonition_utils.HttpResponseExtenders import HttpResponseConflict
 from geonition_utils.HttpResponseExtenders import HttpResponseUnauthorized
 from geonition_utils.views import RequestHandler
 from models import Relationship
+from models import Person
+from datetime import datetime
     
 class People(RequestHandler):
     
@@ -23,17 +27,47 @@ class People(RequestHandler):
         #get the values
         user = kwargs.get('user', None)
         group = kwargs.get('group', None)
-                    
-        if user == '@me' and request.user.is_authenticated():
-            person_object = request.user
+        
+        if not request.user.is_authenticated():
+            return HttpResponseUnauthorized("You need to authenticate to "
+                                            "make this request")
             
-        elif request.user.is_authenticated():
-            person_object = User.objects.get(username=user)
+        #get the right person for user
+        if user == '@me' or user == request.user.username:
+            person_object = Person.objects.filter(user = request.user)
+ 
+        elif request.user.has_perm('data_view'):
+            person_object = Person.objects.filter(user__username = user)
             
         else:
-            return HttpResponseForbidden("You need to sign in to make requests")
+            return HttpResponseForbidden("You are not permitted"
+                                         " to make this request")
         
-        return HttpResponseNotImplemented("no not yet!")
+        
+        #get the time parameter from get parameters TODO
+        time = datetime.today()
+            
+        #query the time
+        person_object = person_object.filter(
+            Q(time__create_time__lte = time),
+            Q(time__expire_time__gte=time) | Q(time__expire_time = None))
+        
+        #default person includes django user values
+        default_person = {
+            "id": request.user.id,
+            "first_name": request.user.first_name,
+            "last_name": request.user.last_name,
+            "email": {
+                "value": request.user.email,
+                "type": "",
+                "primary": True
+            }
+        }
+        if len(person_object) == 0:
+            return HttpResponse(json.dumps(default_person))
+        else:
+            json.loads(person_object[0].json.json_string).update(default_person)
+            return HttpResponse(json.dumps(default_person))
         
     def post(self, request, *args, **kwargs):
         

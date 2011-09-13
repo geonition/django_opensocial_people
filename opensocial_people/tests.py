@@ -54,7 +54,7 @@ class PeopleTest(TestCase):
         response = self.client.get(url)
         
         self.assertEquals(response.status_code,
-                        403,
+                        401,
                         "The user should not be able to query data without beeing authenticated")
         
         
@@ -68,18 +68,12 @@ class PeopleTest(TestCase):
         self.assertContains(response,
                             '"id":',
                             status_code=200)
-        self.assertContains(response,
-                            '"displayName":',
-                            status_code=200)
         
         url = "%s%s" % (reverse('people'), "/user1/@self")
         response = self.client.get(url)
         
         self.assertContains(response,
                             '"id":',
-                            status_code=200)
-        self.assertContains(response,
-                            '"displayName":',
                             status_code=200)
         
         #check the saved user1 data from django user
@@ -90,7 +84,7 @@ class PeopleTest(TestCase):
         self.assertEquals(response_dict['last_name'],
                           'Last1',
                           'The first_name was not Last1 for user1')
-        self.assertEquals(response_dict['email'],
+        self.assertEquals(response_dict['email']['value'],
                           'some@some.org',
                           'The email was not some@some.org for user1')
         
