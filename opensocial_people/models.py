@@ -36,8 +36,8 @@ class Person(models.Model):
     a Person
     """
     user = models.ForeignKey(User)
-    json = models.ForeignKey(JSON, related_name="json")
-    time = models.ForeignKey(TimeD, related_name="time")
+    json = models.ForeignKey(JSON)
+    time = models.ForeignKey(TimeD)
             
     def update(self, json_string, *args, **kwargs):
         """
