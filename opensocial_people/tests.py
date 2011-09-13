@@ -7,14 +7,25 @@ from django.utils import simplejson as json
     
 class PeopleTest(TestCase):
     def setUp(self):
+        
+        #create the client to be used
         self.client = Client()
+        
+        #create users
         self.user1 = User.objects.create_user('user1', 'test1@test.com', 'user1')
         self.user2 = User.objects.create_user('user2', 'test2@test.com', 'user2')
         self.user3 = User.objects.create_user('user3', 'test3@test.com', 'user3')    
         self.user4 = User.objects.create_user('user4', 'test4@test.com', 'user4')
         
+        #create a group
         self.group1 = Group(name='@family')
         self.group1.save()
+        
+        #create values for users profiles
+        self.user1.first_name = "First1"
+        self.user1.last_name = "Last1"
+        self.user1.email = "some@some.org"
+        self.user1.save()
     
     def test_people_rest(self):
         base_url = reverse('people')
@@ -43,7 +54,7 @@ class PeopleTest(TestCase):
                         "The user should not be able to query data without beeing authenticated")
         
         
-        #authenticate and get person
+        #authenticate and get person (user1)
         self.client.login(username='user1', password='user1')
         
         #query the authenticated users information
@@ -66,6 +77,18 @@ class PeopleTest(TestCase):
         self.assertContains(response,
                             '"displayName":',
                             status_code=200)
+        
+        #check the saved user1 data from django user
+        response_dict = json.loads(response.content)
+        self.assertEquals(response_dict['first_name'],
+                          'First1',
+                          'The first_name was not First1 for user1')
+        self.assertEquals(response_dict['last_name'],
+                          'Last1',
+                          'The first_name was not Last1 for user1')
+        self.assertEquals(response_dict['email'],
+                          'some@some.org',
+                          'The email was not some@some.org for user1')
         
         #query other persons
         url = "%s%s" % (reverse('people'), "/user2/@self")
@@ -202,7 +225,8 @@ class PeopleTest(TestCase):
         
         
         
-        
+    
+       
     def tearDown(self):
         
         self.user1.delete()
