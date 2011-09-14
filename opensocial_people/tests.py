@@ -4,6 +4,7 @@ from django.core.urlresolvers import reverse
 from django.contrib.auth.models import User
 from django.contrib.auth.models import Group
 from django.utils import simplejson as json
+from models import Relationship
     
 class PeopleTest(TestCase):
     def setUp(self):
@@ -16,6 +17,11 @@ class PeopleTest(TestCase):
         self.user2 = User.objects.create_user('user2', 'test2@test.com', 'user2')
         self.user3 = User.objects.create_user('user3', 'test3@test.com', 'user3')    
         self.user4 = User.objects.create_user('user4', 'test4@test.com', 'user4')
+        self.user5 = User.objects.create_user('user5', 'test5@test.com', 'user5')
+        self.user6 = User.objects.create_user('user6', 'test6@test.com', 'user6')
+        
+        #create a relationship
+        #r = Relationship()
         
         #create a group
         self.group1 = Group(name='@family')
@@ -108,7 +114,8 @@ class PeopleTest(TestCase):
         
         self.assertEquals(response.status_code,
                           401,
-                          "The post request without authentication did not return 401 Unauthorized")
+                          "The post request without authentication did not "
+                          "return 401 Unauthorized")
         
         # authenticate user
         self.client.login(username='user1', password='user1')
