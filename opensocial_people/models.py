@@ -2,7 +2,6 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.contrib.auth.models import Group
 from django.db import models
-from django.utils import simplejson as json
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.db import IntegrityError
@@ -36,7 +35,7 @@ class Person(models.Model):
     a Person
     """
     user = models.ForeignKey(User)
-    json = models.ForeignKey(JSON)
+    json_data = models.ForeignKey(JSON)
     time = models.ForeignKey(TimeD)
             
     def update(self, json_string, *args, **kwargs):
@@ -68,5 +67,8 @@ class Person(models.Model):
         self.time.expire()
         
     class Meta:
-        unique_together = (("time", "json", "user"),)
+        unique_together = (("time", "json_data", "user"),)
+        permissions = (
+            ("data_view", "Can view other's data"),
+        )
         

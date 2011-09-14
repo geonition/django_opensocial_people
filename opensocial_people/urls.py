@@ -18,6 +18,6 @@ urlpatterns = patterns('opensocial_people.views',
                         People.as_view()),
             
                         (r'^people/(?P<user>@?\w+)/(?P<group>@?\w+)/(?P<tuser>@?\w+)$',
-                        People.as_view(),),
+                        People.as_view()),
             
         )

@@ -27,16 +27,24 @@ class People(RequestHandler):
         #get the values
         user = kwargs.get('user', None)
         group = kwargs.get('group', None)
+        tuser = kwargs.get('tuser', None)
         
         if not request.user.is_authenticated():
             return HttpResponseUnauthorized("You need to authenticate to "
                                             "make this request")
+        
+        #if the tuser is given the tuser Person object should be returned
+        if tuser and request.user.has_perm('opensocial_people.data_view'):
+            person_object = Person.objects.filter(user__username = tuser)
             
+        elif tuser:
+            return HttpResponseForbidden("You are not permitted"
+                                         " to make this request")
         #get the right person for user
-        if user == '@me' or user == request.user.username:
+        elif user == '@me' or user == request.user.username:
             person_object = Person.objects.filter(user = request.user)
  
-        elif request.user.has_perm('data_view'):
+        elif request.user.has_perm('opensocial_people.data_view'):
             person_object = Person.objects.filter(user__username = user)
             
         else:
@@ -65,9 +73,18 @@ class People(RequestHandler):
         }
         if len(person_object) == 0:
             return HttpResponse(json.dumps(default_person))
-        else:
+        elif len(person_object) == 1:
             json.loads(person_object[0].json.json_string).update(default_person)
             return HttpResponse(json.dumps(default_person))
+        else:
+            retobj = {
+                "totalResults": len(person_object),
+                "entry": []
+            }
+            for person in person_object:
+                retobj.append(json.loads(person_object[0].json.json_string).update(default_person))
+            
+            return HttpResponse(json.dumps(retobj))
         
     def post(self, request, *args, **kwargs):
         

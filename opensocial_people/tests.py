@@ -5,7 +5,9 @@ from django.contrib.auth.models import User
 from django.contrib.auth.models import Group
 from django.utils import simplejson as json
 from models import Relationship
-    
+from django.contrib.auth.models import Group
+from django.contrib.auth.models import Permission
+
 class PeopleTest(TestCase):
     def setUp(self):
         
@@ -19,15 +21,25 @@ class PeopleTest(TestCase):
         self.user4 = User.objects.create_user('user4', 'test4@test.com', 'user4')
         self.user5 = User.objects.create_user('user5', 'test5@test.com', 'user5')
         self.user6 = User.objects.create_user('user6', 'test6@test.com', 'user6')
+        self.user7 = User.objects.create_user('user7', 'test7@test.com', 'user7')
         
         #create a group
         self.group1 = Group(name='@family')
         self.group1.save()
+        self.group2 = Group(name="data_view_permission")
+        self.group2.save()
+        self.group2.permissions.add(Permission.objects.get(codename="data_view"))
         
         #create a relationship
         r = Relationship(initial_user = self.user5,
                          group = self.group1,
                          target_user = self.user6)
+        r = Relationship(initial_user = self.user5,
+                         group = self.group1,
+                         target_user = self.user7)
+        
+        #give users permissions
+        self.user5.groups.add(self.group2)
         
         #create values for users profiles
         self.user1.first_name = "First1"
@@ -55,7 +67,7 @@ class PeopleTest(TestCase):
         url = "%s%s" % (base_url, "/@me/@friends")
         self.client.get(url)
         
-    def test_people_get(self):
+    def test_person_get(self):
         
         #get person without beeing authenticated
         url = "%s%s" % (reverse('people'), "/@me/@self")
@@ -104,7 +116,31 @@ class PeopleTest(TestCase):
                         403,
                         "The user should not be able to query other persons without permissions")
         
+        #query a user without permission should return 403
+        url = "%s%s" % (reverse('people'), "/user1/@family/user6")
+        response = self.client.get(url)
         
+        self.assertEquals(response.status_code,
+                          403,
+                            "A user should not be able to query others data "
+                            "without permissions")
+        
+        #logout user1 and login as user5 with permissions
+        self.client.logout()
+        self.client.login(username='user5',
+                          password='user5')
+        url = "%s%s" % (reverse('people'), "/user5/@family/user6")
+        response = self.client.get(url)
+        
+        self.assertContains(response,
+                            '"id":',
+                            status_code=200)
+        
+    def test_person_collection_get(self):
+        
+        url = "%s%s" % (reverse('people'), "/user5/@family")
+        response = self.client.get(url)
+      
     def test_relationship_create(self):
         # if the user is not authenticated it cannot create relationships
         url = "%s%s" % (reverse('people'), "/user1/@friends")
