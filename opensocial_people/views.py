@@ -102,9 +102,9 @@ def create_relationship(request, initial_user, relationship_type):
     except User.DoesNotExist:
         return HttpResponseNotFound("The target user of the relationship was not found")
     
-    relationship = Relationship(user_id = iuser,
+    relationship = Relationship(initial_user = iuser,
                                 group_id = gtype,
-                                person = tuser)
+                                target_user = tuser)
     
     sid = transaction.savepoint()
     try:
