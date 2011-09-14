@@ -17,14 +17,14 @@ import sys
 class Relationship(models.Model):
     """ The Relationship model describes a link between two users """
     
-    user_id = models.ForeignKey(User, related_name='initial_user')
+    initial_user = models.ForeignKey(User, related_name='initial_user')
     group_id = models.CharField(max_length = 10)
-    person = models.ForeignKey(User, related_name='target_user')
+    target_user = models.ForeignKey(User, related_name='target_user')
     
     class Meta:
-        unique_together = ('user_id',
+        unique_together = ('initial_user',
                            'group_id',
-                           'person')
+                           'target_user')
         
 
 #this can be used instead of writing getattr everywhere
