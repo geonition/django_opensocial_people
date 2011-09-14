@@ -103,7 +103,7 @@ def create_relationship(request, initial_user, relationship_type):
         return HttpResponseNotFound("The target user of the relationship was not found")
     
     relationship = Relationship(initial_user = iuser,
-                                group_id = gtype,
+                                group = gtype,
                                 target_user = tuser)
     
     sid = transaction.savepoint()

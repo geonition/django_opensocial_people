@@ -20,12 +20,14 @@ class PeopleTest(TestCase):
         self.user5 = User.objects.create_user('user5', 'test5@test.com', 'user5')
         self.user6 = User.objects.create_user('user6', 'test6@test.com', 'user6')
         
-        #create a relationship
-        #r = Relationship()
-        
         #create a group
         self.group1 = Group(name='@family')
         self.group1.save()
+        
+        #create a relationship
+        r = Relationship(initial_user = self.user5,
+                         group = self.group1,
+                         target_user = self.user6)
         
         #create values for users profiles
         self.user1.first_name = "First1"

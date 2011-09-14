@@ -18,12 +18,12 @@ class Relationship(models.Model):
     """ The Relationship model describes a link between two users """
     
     initial_user = models.ForeignKey(User, related_name='initial_user')
-    group_id = models.CharField(max_length = 10)
+    group = models.CharField(max_length = 10)
     target_user = models.ForeignKey(User, related_name='target_user')
     
     class Meta:
         unique_together = ('initial_user',
-                           'group_id',
+                           'group',
                            'target_user')
         
 
