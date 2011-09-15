@@ -1,19 +1,10 @@
-from django.db import models
+from django.conf import settings
 from django.contrib.auth.models import User
-from django.contrib.auth.models import Group
 from django.db import models
-from django.contrib.auth.models import User
 from django.db.models.signals import post_save
-from django.db import IntegrityError
 from django.utils import simplejson as json
-from geonition_utils.manager import MongoDBManager
 from geonition_utils.models import JSON
 from geonition_utils.models import TimeD
-from django.conf import settings
-import django
-from datetime import datetime
-import sys
-from django.db.models.signals import post_save
 
 class Relationship(models.Model):
     """ The Relationship model describes a link between two users """
@@ -46,7 +37,7 @@ class Person(models.Model):
     json_data = models.ForeignKey(JSON)
     time = models.ForeignKey(TimeD)        
         
-    def update(self, json_string, *args, **kwargs):
+    def update(self, json_string):
         """
         Updates this persons information.
         
@@ -71,9 +62,30 @@ class Person(models.Model):
             new_time.save()
             new_person.save()
         
-    def delete(self, *args, **kwargs):
+    def delete(self):
         self.time.expire()
-     
+    
+    def json(self):
+        """
+        This function returns a dictionary representation of this
+        object
+        """
+        #default person includes django user values
+        default_person = {
+            "id": self.user.id,
+            "username": self.user.username,
+            "first_name": self.user.first_name,
+            "last_name": self.user.last_name,
+            "email": {
+                "value": self.user.email,
+                "type": "",
+                "primary": True
+            }
+        }
+        json_data_dict = json.loads(self.json_data.json_string)
+        json_data_dict.update(default_person)
+        return json_data_dict
+        
     def __unicode__(self):
         return u'for user %s' % (self.user.username,)
         
@@ -86,6 +98,7 @@ class Person(models.Model):
 # a signal reciever is added to create e person after a django user
 # has been created
 def create_person(sender, instance, created, **kwargs):
+    
     if created:
         default_person = {
             "id": instance.id,
@@ -107,6 +120,11 @@ def create_person(sender, instance, created, **kwargs):
         Person(user=instance,
                json_data=json_obj,
                time=time_obj).save()
+        
+        #create relationship for oneself
+        Relationship(initial_user=instance,
+                     group='@self',
+                     target_user=instance).save()
 
 post_save.connect(create_person,
                   sender=User,

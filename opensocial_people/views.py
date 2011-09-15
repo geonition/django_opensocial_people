@@ -1,21 +1,19 @@
-from django.http import HttpResponseForbidden
-from django.http import HttpResponseNotFound
-from django.http import HttpResponse
+from datetime import datetime
 from django.contrib.auth.models import User
-from django.contrib.auth.models import Group
-from django.core import serializers
-from django.db.utils import IntegrityError
 from django.db import transaction
 from django.db.models import Q
+from django.db.utils import IntegrityError
+from django.http import HttpResponse
+from django.http import HttpResponseForbidden
+from django.http import HttpResponseNotFound
 from django.utils import simplejson as json
 from geonition_utils.HttpResponseExtenders import HttpResponseNotImplemented
-from geonition_utils.HttpResponseExtenders import HttpResponseCreated
 from geonition_utils.HttpResponseExtenders import HttpResponseConflict
+from geonition_utils.HttpResponseExtenders import HttpResponseCreated
 from geonition_utils.HttpResponseExtenders import HttpResponseUnauthorized
 from geonition_utils.views import RequestHandler
-from models import Relationship
 from models import Person
-from datetime import datetime
+from models import Relationship
     
 class People(RequestHandler):
     
@@ -33,57 +31,73 @@ class People(RequestHandler):
             return HttpResponseUnauthorized("You need to authenticate to "
                                             "make this request")
         
+                
+        
+        #default value for group
+        if group == None:
+            group = '@self'
+            
+        #modify user to be able to filter e.g. @me @owner etc.
+        if user == '@me':
+            user = request.user.username
+            
+        if not request.user.has_perm('opensocial_people.data_view') \
+            and request.user.username != user:
+            return HttpResponseForbidden("You are not permitted "
+                                         "to make this request")
+        
+        #create a person queryset
+        person_objects = Person.objects.all()
+        #create a relationship queryset
+        relationship_objects = Relationship.objects.all()
+        
+        #filter the Persons according to groups
+        if user and tuser and group:
+            relationship_objects = relationship_objects.filter(initial_user__username = user)
+            relationship_objects = relationship_objects.filter(group = group)
+            relationship_objects = relationship_objects.filter(target_user__username = tuser)
+        
+        elif user and group:
+            relationship_objects = relationship_objects.filter(initial_user__username = user)
+            relationship_objects = relationship_objects.filter(group = group)
+            
+        #filter the persons that is not target users in the relationships
+        target_user_ids = relationship_objects.values_list('target_user',
+                                                           flat=True)
+        
+        person_objects = person_objects.filter(user__in = target_user_ids)
+        
         #if the tuser is given the tuser Person object should be returned
         if tuser and request.user.has_perm('opensocial_people.data_view'):
-            person_object = Person.objects.filter(user__username = tuser)
-            
+            person_objects = person_objects.filter(user__username = tuser)    
+        
         elif tuser:
             return HttpResponseForbidden("You are not permitted"
                                          " to make this request")
-        #get the right person for user
-        elif user == '@me' or user == request.user.username:
-            person_object = Person.objects.filter(user = request.user)
- 
-        elif request.user.has_perm('opensocial_people.data_view'):
-            person_object = Person.objects.filter(user__username = user)
-            
-        else:
-            return HttpResponseForbidden("You are not permitted"
-                                         " to make this request")
-        
-        
+          
         #get the time parameter from get parameters TODO
         time = datetime.today()
             
         #query the time
-        person_object = person_object.filter(
+        person_objects = person_objects.filter(
             Q(time__create_time__lte = time),
             Q(time__expire_time__gte=time) | Q(time__expire_time = None))
         
-        #default person includes django user values
-        default_person = {
-            "id": request.user.id,
-            "first_name": request.user.first_name,
-            "last_name": request.user.last_name,
-            "email": {
-                "value": request.user.email,
-                "type": "",
-                "primary": True
-            }
-        }
-        if len(person_object) == 0:
-            return HttpResponse(json.dumps(default_person))
-        elif len(person_object) == 1:
-            json.loads(person_object[0].json.json_string).update(default_person)
-            return HttpResponse(json.dumps(default_person))
+        if len(person_objects) == 0:
+            return HttpResponseNotFound('The person or persons you requested '
+                                        'for was not found')
+        elif len(person_objects) == 1:
+            return_person = person_objects[0].json()
+            return HttpResponse(json.dumps(return_person))
+        
         else:
             retobj = {
-                "totalResults": len(person_object),
+                "totalResults": len(person_objects),
                 "entry": []
             }
-            for person in person_object:
-                retobj.append(json.loads(person_object[0].json.json_string).update(default_person))
-            
+            for person in person_objects:
+                retobj['entry'].append(person.json())
+                
             return HttpResponse(json.dumps(retobj))
         
     def post(self, request, *args, **kwargs):
@@ -98,7 +112,9 @@ class People(RequestHandler):
                 
             return create_relationship(request, initial_user, relationship_type)
         else:
-            return HttpResponseUnauthorized("The user needs to be authenticated to make this request")
+            return HttpResponseUnauthorized("The user needs to be "
+                                            "authenticated to make this "
+                                            "request")
             
 
 def create_relationship(request, initial_user, relationship_type):

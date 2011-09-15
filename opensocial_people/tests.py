@@ -3,40 +3,61 @@ from django.test.client import Client
 from django.core.urlresolvers import reverse
 from django.contrib.auth.models import User
 from django.contrib.auth.models import Group
+from django.contrib.auth.models import Permission
 from django.utils import simplejson as json
 from models import Relationship
-from django.contrib.auth.models import Group
-from django.contrib.auth.models import Permission
-
 class PeopleTest(TestCase):
+    
     def setUp(self):
         
         #create the client to be used
         self.client = Client()
         
         #create users
-        self.user1 = User.objects.create_user('user1', 'test1@test.com', 'user1')
-        self.user2 = User.objects.create_user('user2', 'test2@test.com', 'user2')
-        self.user3 = User.objects.create_user('user3', 'test3@test.com', 'user3')    
-        self.user4 = User.objects.create_user('user4', 'test4@test.com', 'user4')
-        self.user5 = User.objects.create_user('user5', 'test5@test.com', 'user5')
-        self.user6 = User.objects.create_user('user6', 'test6@test.com', 'user6')
-        self.user7 = User.objects.create_user('user7', 'test7@test.com', 'user7')
+        self.user1 = User.objects.create_user('user1',
+                                              'test1@test.com',
+                                              'user1')
+        self.user2 = User.objects.create_user('user2',
+                                              'test2@test.com',
+                                              'user2')
+        self.user3 = User.objects.create_user('user3',
+                                              'test3@test.com',
+                                              'user3')    
+        self.user4 = User.objects.create_user('user4',
+                                              'test4@test.com',
+                                              'user4')
+        self.user5 = User.objects.create_user('user5',
+                                              'test5@test.com',
+                                              'user5')
+        self.user6 = User.objects.create_user('user6',
+                                              'test6@test.com',
+                                              'user6')
+        self.user7 = User.objects.create_user('user7',
+                                              'test7@test.com',
+                                              'user7')
         
         #create a group
         self.group1 = Group(name='@family')
         self.group1.save()
         self.group2 = Group(name="data_view_permission")
         self.group2.save()
-        self.group2.permissions.add(Permission.objects.get(codename="data_view"))
+        permission = Permission.objects.get(codename="data_view")
+        self.group2.permissions.add(permission)
         
         #create a relationship
         r = Relationship(initial_user = self.user5,
                          group = self.group1,
                          target_user = self.user6)
+        r.save()
         r = Relationship(initial_user = self.user5,
                          group = self.group1,
                          target_user = self.user7)
+        r.save()
+        r = Relationship(initial_user = self.user6,
+                         group = self.group1,
+                         target_user = self.user7)
+        r.save()
+        
         
         #give users permissions
         self.user5.groups.add(self.group2)
@@ -75,7 +96,8 @@ class PeopleTest(TestCase):
         
         self.assertEquals(response.status_code,
                         401,
-                        "The user should not be able to query data without beeing authenticated")
+                        "The user should not be able to "
+                        "query data without beeing authenticated")
         
         
         #authenticate and get person (user1)
@@ -114,7 +136,8 @@ class PeopleTest(TestCase):
         
         self.assertEquals(response.status_code,
                         403,
-                        "The user should not be able to query other persons without permissions")
+                        "The user should not be able to query "
+                        "other persons without permissions")
         
         #query a user without permission should return 403
         url = "%s%s" % (reverse('people'), "/user1/@family/user6")
@@ -136,10 +159,60 @@ class PeopleTest(TestCase):
                             '"id":',
                             status_code=200)
         
+        #query with with help of others relationship
+        url = "%s%s" % (reverse('people'), "/user6/@family/user7")
+        response = self.client.get(url)
+        
+        self.assertContains(response,
+                            '"id":',
+                            status_code=200)
+        
+        #query with not existing relationship
+        url = "%s%s" % (reverse('people'), "/user1/@family/user2")
+        response = self.client.get(url)
+        
+        self.assertEquals(response.status_code,
+                        404,
+                        'querying with relationship that does not exist '
+                        'should return not found')
+        
     def test_person_collection_get(self):
         
+        #not signed in should return unauthorized
         url = "%s%s" % (reverse('people'), "/user5/@family")
         response = self.client.get(url)
+        
+        self.assertEquals(response.status_code,
+                          401,
+                          'Response should have been 401 as the user '
+                          'was not authenticated')
+        
+        #sign in
+        self.client.login(username='user5',
+                          password='user5')
+        response = self.client.get(url)
+        self.assertContains(response,
+                            '"id"',
+                            status_code=200)
+        
+        
+        #query user 5 family should return user6 and user7
+        self.assertContains(response,
+                            '"username": "user6"',
+                            status_code = 200)
+        self.assertContains(response,
+                            '"username": "user7"',
+                            status_code = 200)
+        
+        #query user5 @self should return user5
+        url = "%s%s" % (reverse('people'), "/user5/@self")
+        
+        response = self.client.get(url)
+        self.assertContains(response,
+                            '"username": "user5"',
+                            status_code = 200)
+        
+        
       
     def test_relationship_create(self):
         # if the user is not authenticated it cannot create relationships
@@ -168,7 +241,8 @@ class PeopleTest(TestCase):
         
         self.assertEquals(response.status_code,
                           201,
-                          "The create relationship request did not return 201 created")
+                          "The create relationship request did not "
+                          "return 201 created")
         
         
         # test success with other group
@@ -181,10 +255,12 @@ class PeopleTest(TestCase):
         
         self.assertEquals(response.status_code,
                           201,
-                          "The create relationship request did not return 201 created")
+                          "The create relationship request did not "
+                          "return 201 created")
         
         
-        # test creation with not existing group, should not matter and returns 201
+        # test creation with not existing group,
+        # should not matter and returns 201
         url = "%s%s" % (reverse('people'), "/@me/no_group")
         response = self.client.post(url,
                                     {'id': 'user2',
@@ -193,7 +269,8 @@ class PeopleTest(TestCase):
         
         self.assertEquals(response.status_code,
                           201,
-                          "Creating relationship with non existing group did not return 201 created")
+                          "Creating relationship with non existing group "
+                          "did not return 201 created")
         
         
         # test creation with not existing user
@@ -205,7 +282,8 @@ class PeopleTest(TestCase):
         
         self.assertEquals(response.status_code,
                           404,
-                          "Creating relationship with non existing user did not return 404 not found")
+                          "Creating relationship with non existing user "
+                          "did not return 404 not found")
         
         
         # group_id should dafault to @friends
@@ -217,7 +295,8 @@ class PeopleTest(TestCase):
         
         self.assertEquals(response.status_code,
                           201,
-                          "Creating relationship with default @friends as group did not return 201 created")
+                          "Creating relationship with default @friends "
+                          "as group did not return 201 created")
         
         
         # user_id should default to @me and group to @friends
@@ -229,7 +308,8 @@ class PeopleTest(TestCase):
         
         self.assertEquals(response.status_code,
                           201,
-                          "Creating relationship with default @me as user did not return 201 created")
+                          "Creating relationship with default @me as user "
+                          "did not return 201 created")
         
         # test duplicate relationship
         # post to /people/@me/@friends with target person as post conent
@@ -241,7 +321,8 @@ class PeopleTest(TestCase):
         
         self.assertEquals(response.status_code,
                           409,
-                          "Creating duplicate identical relationships did not return 409 conflict")
+                          "Creating duplicate identical relationships "
+                          "did not return 409 conflict")
         
         
         # user can only create relationships for himself/herself
@@ -253,7 +334,8 @@ class PeopleTest(TestCase):
         
         self.assertEquals(response.status_code,
                           403,
-                          "Creating relationship for other users did not return 403 forbidden")
+                          "Creating relationship for other users "
+                          "did not return 403 forbidden")
         
         #try to create relationship for not existing user also other then @me
         url = "%s%s" % (reverse('people'), "/no_user/@friends")
@@ -264,7 +346,8 @@ class PeopleTest(TestCase):
         
         self.assertEquals(response.status_code,
                           403,
-                          "Creating relationship for other users did not return 403 forbidden")
+                          "Creating relationship for other users "
+                          "did not return 403 forbidden")
         
         
         
@@ -276,7 +359,11 @@ class PeopleTest(TestCase):
         self.user2.delete()
         self.user3.delete()
         self.user4.delete()
+        self.user5.delete()
+        self.user6.delete()
+        self.user7.delete()
         self.group1.delete()
+        self.group2.delete()
         
         
         
