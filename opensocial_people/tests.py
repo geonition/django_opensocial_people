@@ -216,7 +216,42 @@ class PeopleTest(TestCase):
                             status_code = 200)
         
         
-      
+    def test_person_update(self):
+        #updating the person with PUT requests
+        #opensocial defines this with POST request but that conflicts with
+        #the relationship creation and REST principles
+        
+        #authenticate and get person (user1)
+        self.client.login(username='user1', password='user1')
+        
+        #get a person
+        url = "%s%s" % (reverse('people'), "/@me/@self")
+        response = self.client.get(url)
+        
+        person_dict = json.loads(response.content)
+        
+        #change some value in person
+        person_dict['first_name'] = 'Toffe'
+        person_dict['last_name'] = 'guess'
+        
+        #update the person
+        response = self.client.put(url,
+                                   data=json.dumps(person_dict),
+                                   content_type='application/json')
+        
+        #get the same person and check the value
+        response = self.client.get(url)
+        
+        new_person_dict = json.loads(response.content)
+        self.assertEquals(new_person_dict['first_name'],
+                          'Toffe',
+                          'The first name was not updated')
+        self.assertEquals(new_person_dict['last_name'],
+                          'guess',
+                          'The last name was not updated')
+        
+        
+    
     def test_relationship_create(self):
         # if the user is not authenticated it cannot create relationships
         url = "%s%s" % (reverse('people'), "/user1/@friends")

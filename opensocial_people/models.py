@@ -46,21 +46,30 @@ class Person(models.Model):
         expired and a new person is created.
         """
         
-        if self.json.json_string != json_string:
+        if self.json_data.json_string != json_string:
             
             #set old feature as expired
             self.time.expire()
+            self.save()
             
             #save the new property
             new_json = JSON(collection='opensocial_people.person',
                             json_string=json_string)
-            new_time = TimeD()
-            new_person = Person(user = self.user,
-                                json = new_json,
-                                time = new_time)
             new_json.save()
+            new_time = TimeD()
             new_time.save()
+            new_person = Person(user = self.user,
+                                json_data = new_json,
+                                time = new_time)
             new_person.save()
+            
+            #check the values that should be updated in the user model
+            json_dict = json.loads(json_string)
+            
+            self.user.first_name = json_dict['first_name']
+            self.user.last_name = json_dict['last_name']
+            self.user.email = json_dict['email']['value']
+            self.user.save()
         
     def delete(self):
         self.time.expire()

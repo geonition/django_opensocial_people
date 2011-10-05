@@ -20,6 +20,26 @@ class People(RequestHandler):
     def __init__(self):
         pass
     
+    def get_real_name(self,
+                      request,
+                      username=None,
+                      groupname= None):
+        """
+        This function returns the real unique name for
+        the generic name like @me or @self
+        
+        Returns a tuple with the username first
+        and the default groupname second.
+        """
+        #look for the right username
+        if username == '@me' or username == None:
+            username = request.user.username
+            
+        if groupname == None:
+            groupname = '@self'
+
+        return (username, groupname)        
+        
     def get(self, request, *args, **kwargs):
         
         #get the values
@@ -30,16 +50,12 @@ class People(RequestHandler):
         if not request.user.is_authenticated():
             return HttpResponseUnauthorized("You need to authenticate to "
                                             "make this request")
-        
-                
-        
-        #default value for group
-        if group == None:
-            group = '@self'
-            
-        #modify user to be able to filter e.g. @me @owner etc.
-        if user == '@me':
-            user = request.user.username
+    
+        names = self.get_real_name(request,
+                                   username=user,
+                                   groupname=group)
+        user = names[0]
+        group = names[1]
             
         if not request.user.has_perm('opensocial_people.data_view') \
             and request.user.username != user:
@@ -48,6 +64,7 @@ class People(RequestHandler):
         
         #create a person queryset
         person_objects = Person.objects.all()
+        
         #create a relationship queryset
         relationship_objects = Relationship.objects.all()
         
@@ -77,12 +94,12 @@ class People(RequestHandler):
           
         #get the time parameter from get parameters TODO
         time = datetime.today()
-            
+        
         #query the time
         person_objects = person_objects.filter(
-            Q(time__create_time__lte = time),
-            Q(time__expire_time__gte=time) | Q(time__expire_time = None))
-        
+            Q(time__create_time__lt = time),
+            Q(time__expire_time__gt=time) | Q(time__expire_time = None))
+            
         if len(person_objects) == 0:
             return HttpResponseNotFound('The person or persons you requested '
                                         'for was not found')
@@ -106,6 +123,12 @@ class People(RequestHandler):
         user = kwargs.get('user', None)
         group = kwargs.get('group', None)
         
+        names = self.get_real_name(request,
+                                   username=user,
+                                   groupname=group)
+        user = names[0]
+        group = names[1]
+        
         if request.user.is_authenticated():
             initial_user = user
             relationship_type = group
@@ -115,6 +138,27 @@ class People(RequestHandler):
             return HttpResponseUnauthorized("The user needs to be "
                                             "authenticated to make this "
                                             "request")
+    def put(self, request, *args, **kwargs):
+        
+        #get the values, only user matters
+        user = kwargs.get('user', None)
+        
+        names = self.get_real_name(request,
+                                   username=user)
+        user = names[0]
+        
+        if request.user.is_authenticated() and request.user.username == user:
+            
+            person = Person.objects.get(user = request.user)
+            person.update(request.raw_post_data)
+            
+            return HttpResponse(person.json(),
+                                content_type='application/json')
+        
+        else:
+            
+            return HttpResponseUnauthorized("You need to sign in to make "
+                                            "this request")
             
 
 def create_relationship(request, initial_user, relationship_type):
