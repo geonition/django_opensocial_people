@@ -6,6 +6,9 @@ from django.contrib.auth.models import Group
 from django.contrib.auth.models import Permission
 from django.utils import simplejson as json
 from models import Relationship
+from timeit import Timer
+
+
 class PeopleTest(TestCase):
     
     def setUp(self):
@@ -348,11 +351,7 @@ class PeopleTest(TestCase):
                           403,
                           "Creating relationship for other users "
                           "did not return 403 forbidden")
-        
-        
-        
-    
-       
+      
     def tearDown(self):
         
         self.user1.delete()
