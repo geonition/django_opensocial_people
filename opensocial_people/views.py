@@ -147,18 +147,22 @@ class People(RequestHandler):
                                    username=user)
         user = names[0]
         
-        if request.user.is_authenticated() and request.user.username == user:
-            
-            person = Person.objects.get(user = request.user)
-            person.update(request.raw_post_data)
-            
-            return HttpResponse(person.json(),
-                                content_type='application/json')
-        
-        else:
-            
+        if not request.user.is_authenticated():
             return HttpResponseUnauthorized("You need to sign in to make "
                                             "this request")
+            
+        elif request.user.username != user:
+            
+            return HttpResponseUnauthorized("You can only modify your own "
+                                            "profile")
+        
+        else:
+            person = Person.objects.filter(user = request.user)
+            person = person.latest('time__create_time')
+            person.update(request.raw_post_data)
+            
+            return HttpResponse(json.dumps(person.json()),
+                                content_type='application/json')
             
 
 def create_relationship(request, initial_user, relationship_type):

@@ -66,9 +66,12 @@ class Person(models.Model):
             #check the values that should be updated in the user model
             json_dict = json.loads(json_string)
             
-            self.user.first_name = json_dict['first_name']
-            self.user.last_name = json_dict['last_name']
-            self.user.email = json_dict['email']['value']
+            if json_dict.has_key('first_name'):
+                self.user.first_name = json_dict['first_name']
+            if json_dict.has_key('last_name'):
+                self.user.last_name = json_dict['last_name']
+            if json_dict.has_key('email') and json_dict['email'].has_key('value'):
+                self.user.email = json_dict['email']['value']
             self.user.save()
         
     def delete(self):
