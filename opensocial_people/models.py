@@ -48,6 +48,10 @@ class Person(models.Model):
         
         if self.json_data.json_string != json_string:
             
+            #this one throws an error if not valid json --> know how to use it
+            #otherwise you get a 500
+            json_dict = json.loads(json_string)
+            
             #set old feature as expired
             self.time.expire()
             self.save()
@@ -64,8 +68,6 @@ class Person(models.Model):
             new_person.save()
             
             #check the values that should be updated in the user model
-            json_dict = json.loads(json_string)
-            
             if json_dict.has_key('first_name'):
                 self.user.first_name = json_dict['first_name']
             if json_dict.has_key('last_name'):
