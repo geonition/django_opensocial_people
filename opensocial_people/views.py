@@ -163,6 +163,37 @@ class People(RequestHandler):
             
             return HttpResponse(json.dumps(person.json()),
                                 content_type='application/json')
+     
+    def delete(self, request, *args, **kwargs):
+        
+        #get the kwargs
+        user = kwargs.get('user', None)
+        group = kwargs.get('group', None)
+        tuser = kwargs.get('tuser', None)
+        
+        names = self.get_real_name(request,
+                                   username=user,
+                                   groupname=group)
+        user = names[0]
+        group = names[1]
+        
+        if not request.user.is_authenticated():
+            return HttpResponseUnauthorized("You need to sign in to make "
+                                            "this request")
+            
+        elif request.user.username != user:
+            
+            return HttpResponseUnauthorized("You can only modify your own "
+                                            "relationships")
+        
+        else:
+            relationship = Relationship.objects.filter(initial_user__username=user)
+            relationship = relationship.filter(target_user__username=tuser)
+            relationship = relationship.filter(group=group)
+            relationship.delete()
+            
+            return HttpResponse("The relationship was deleted",
+                                content_type='application/json')
             
 
 def create_relationship(request, initial_user, relationship_type):

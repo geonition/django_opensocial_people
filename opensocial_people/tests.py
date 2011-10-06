@@ -251,7 +251,6 @@ class PeopleTest(TestCase):
                           'The last name was not updated')
         
         
-    
     def test_relationship_create(self):
         # if the user is not authenticated it cannot create relationships
         url = "%s%s" % (reverse('people'), "/user1/@friends")
@@ -386,7 +385,29 @@ class PeopleTest(TestCase):
                           403,
                           "Creating relationship for other users "
                           "did not return 403 forbidden")
-      
+    
+    
+    def test_relationship_delete(self):
+        #authenticate the user
+        self.client.login(username='user5', password='user5')
+        
+        #delete one of the relationships created in setup
+        url = "%s%s" % (reverse('people'), "/user5/@family/user6")
+        
+        response = self.client.delete(url)
+        
+        self.assertContains(response,
+                               '',
+                               status_code=200)
+        
+        #query the family members and check that user6 is there
+        url = "%s%s" % (reverse('people'), "/user5/@family")
+        response = self.client.get(url)
+        
+        self.assertNotContains(response,
+                               'user6',
+                               status_code=200)
+        
     def tearDown(self):
         
         self.user1.delete()
