@@ -272,9 +272,10 @@ class PeopleTest(TestCase):
         # post to /people/@me/@friends with target person as post content
         url = "%s%s" % (reverse('people'), "/@me/@friends")
         response = self.client.post(url,
-                                    {'id': 'user2',
+                                    json.dumps({'id': 'user2',
                                      'displayName': '',
-                                     'thumbnailUrl': ''})
+                                     'thumbnailUrl': ''}),
+                                    content_type='application/json')
         
         self.assertEquals(response.status_code,
                           201,

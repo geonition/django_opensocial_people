@@ -210,7 +210,12 @@ def create_relationship(request, initial_user, relationship_type):
     
     tuser = None
     try:
-        tuser = User.objects.get(username = request.POST.get('id', None))
+        if request.META['CONTENT_TYPE'] == 'application/json':
+            post_dict = json.loads(request.raw_post_data)
+            tuser = User.objects.get(username = post_dict.get('id', None))
+        else:
+            tuser = User.objects.get(username = request.POST.get('id', None))
+            
     except User.DoesNotExist:
         return HttpResponseNotFound("The target user of the relationship was not found")
     
