@@ -159,9 +159,9 @@ class People(RequestHandler):
         else:
             person = Person.objects.filter(user = request.user)
             person = person.latest('time__create_time')
-            person.update(request.raw_post_data)
+            new_person = person.update(request.raw_post_data)
             
-            return HttpResponse(json.dumps(person.json()),
+            return HttpResponse(json.dumps(new_person.json()),
                                 content_type='application/json')
      
     def delete(self, request, *args, **kwargs):

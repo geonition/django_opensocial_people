@@ -60,6 +60,7 @@ class Person(models.Model):
             new_json = JSON(collection='opensocial_people.person',
                             json_string=json_string)
             new_json.save()
+            
             new_time = TimeD()
             new_time.save()
             new_person = Person(user = self.user,
@@ -74,7 +75,10 @@ class Person(models.Model):
                 self.user.last_name = json_dict['last_name']
             if json_dict.has_key('email') and json_dict['email'].has_key('value'):
                 self.user.email = json_dict['email']['value']
+            #save the user
             self.user.save()
+            
+            return new_person
         
     def delete(self):
         self.time.expire()
@@ -104,6 +108,7 @@ class Person(models.Model):
         return u'for user %s' % (self.user.username,)
         
     class Meta:
+        #does this really index the text field?
         unique_together = (("time", "json_data", "user"),)
         permissions = (
             ("data_view", "Can view other's data"),
