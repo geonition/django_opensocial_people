@@ -214,8 +214,7 @@ class PeopleTest(TestCase):
         self.assertContains(response,
                             '"username": "user5"',
                             status_code = 200)
-        
-        
+                
     def test_person_update(self):
         #updating the person with PUT requests
         #opensocial defines this with POST request but that conflicts with
@@ -251,6 +250,18 @@ class PeopleTest(TestCase):
                           'The last name was not updated')
         
         
+        #update with really long json, try to reproduce the idnex error
+        json_dict = {}
+        for i in range(7000):
+            json_dict[str(i)] = "some string"
+            
+        json_str = json.dumps(json_dict)
+        
+        #update the person
+        response = self.client.put(url,
+                                   data=json_str,
+                                   content_type='application/json')
+               
     def test_relationship_create(self):
         # if the user is not authenticated it cannot create relationships
         url = "%s%s" % (reverse('people'), "/user1/@friends")
@@ -386,8 +397,7 @@ class PeopleTest(TestCase):
                           403,
                           "Creating relationship for other users "
                           "did not return 403 forbidden")
-    
-    
+        
     def test_relationship_delete(self):
         #authenticate the user
         self.client.login(username='user5', password='user5')
@@ -408,6 +418,40 @@ class PeopleTest(TestCase):
         self.assertNotContains(response,
                                'user6',
                                status_code=200)
+     
+    def test_person_supported_fields(self):
+        url = "%s%s" % (reverse('people'), '/@supportedFields')
+        response = self.client.get(url)
+        self.assertEquals(json.loads(response.content),
+                          ["username",
+                           "last_name",
+                           "time.create_time",
+                           "email.primary",
+                           "email.value",
+                           "email.type",
+                           "id",
+                           "first_name",
+                           "displayName",
+                           "time.expire_time",
+                           "email"],
+                          "The supported fields returned was not correct")
+        
+        #return fields with the json types as values
+        url = "%s%s" % (reverse('people'), '/@supportedFields?types=true')
+        response = self.client.get(url)
+        self.assertEquals(json.loads(response.content),
+                          {"username": "string",
+                           "last_name": "string",
+                           "time.create_time": "string",
+                           "email.primary": True,
+                           "email.value": "string",
+                           "email.type": "string",
+                           "id": "string",
+                           "first_name": "string",
+                           "displayName": "string",
+                           "time.expire_time": "string",
+                           "email": "object"},
+                          "The supported field types returned was not correct")
         
     def tearDown(self):
         

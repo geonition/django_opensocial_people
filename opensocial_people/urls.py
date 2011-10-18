@@ -10,6 +10,13 @@ urlpatterns = patterns('opensocial_people.views',
                             'group': '@friends'},
                             name="people"),            
                         
+                        #this should work as defined in opensocial 2.0
+                        #except with one addition if passed with ?types=true
+                        #it returns a json with keys as fields and values as
+                        # the type of the field
+                        (r'^people/@supportedFields$',
+                        'supported_fields'),
+                        
                         (r'^people/(?P<user>@?\w+)$',
                         People.as_view(),
                         {'group': '@friends'}),

@@ -196,6 +196,28 @@ class People(RequestHandler):
                                 content_type='application/json')
             
 
+
+def supported_fields(request):
+    """
+    This view function returns the supportedFields for the person object
+    querying.
+    
+    This needs to be improved in some nice manner. Also performance issues
+    will arrise. But works at the moment,,
+    """
+    
+    with_types = request.GET.get('types', False)
+    distinct_persons = Person.objects.only('json_data__json_string').distinct()
+    
+    fields = {}
+    for per in distinct_persons:
+        fields.update(per.get_fields())
+    
+    if not with_types:
+        fields = fields.keys()
+        
+    return HttpResponse(json.dumps(fields))
+    
 def create_relationship(request, initial_user, relationship_type):
     """ This function creates a realtionship from intial_user with
     relation_type to target user that is in the request.POST payload """
