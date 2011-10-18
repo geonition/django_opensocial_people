@@ -206,7 +206,9 @@ def supported_fields(request):
     will arrise. But works at the moment,,
     """
     
-    with_types = request.GET.get('types', False)
+    with_types = request.GET.get('types', 'false')
+    with_types = json.loads(with_types)
+    
     distinct_persons = Person.objects.only('json_data__json_string').distinct()
     
     fields = {}
