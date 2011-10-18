@@ -103,6 +103,28 @@ class Person(models.Model):
         json_data_dict = json.loads(self.json_data.json_string)
         json_data_dict.update(default_person)
         return json_data_dict
+    
+    def get_fields(self):
+        """
+        This function returns a dictionary with keys and their
+        coresponding JSON type as value.
+        """
+        person_fields = {
+            'id': 'string',
+            'username': 'string',
+            'displayName': 'string',
+            'first_name': 'string',
+            'last_name': 'string',
+            'email': 'object',
+            'email.value': 'string',
+            'email.type': 'string',
+            'email.primary': True
+        }
+        fields = self.json_data.get_fields()
+        fields.update(self.time.get_fields())
+        fields.update(person_fields)
+        
+        return fields
         
     def __unicode__(self):
         return u'for user %s' % (self.user.username,)
