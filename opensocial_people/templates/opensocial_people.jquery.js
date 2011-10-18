@@ -74,6 +74,38 @@ function(user, person_object, callback_function) {
     });
 };
 
+/*
+ This function returns a array of key names
+ or a JSON object where keys are connected
+ with the type of the value.
+*/
+gnt.opensocial_people['get_supported_fields'] =
+function(with_values, callback_function) {
+    
+    if(with_values === undefined) {
+        with_values = false;
+    }
+    $.ajax({
+        url: "{% url people %}/@supportedFields?types=" + with_values,
+        type: "GET",
+        contentType: "application/json",
+        success: function(data){
+            if(callback_function !== undefined) {
+                callback_function(data);
+                }
+            },
+        error: function(e) {
+            if(callback_function !== undefined) {
+                callback_function(e);
+            }
+        },
+        dataType: "json",
+        beforeSend: function(xhr){
+            //for cross site authentication using CORS
+            xhr.withCredentials = true;
+            }
+    });    
+}
 
 /*
  This function creates a relationship between two persons
