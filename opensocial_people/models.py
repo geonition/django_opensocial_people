@@ -80,6 +80,9 @@ class Person(models.Model):
             
             return new_person
         
+        else:
+            return self
+        
     def delete(self):
         self.time.expire()
     

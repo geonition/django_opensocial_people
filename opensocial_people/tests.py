@@ -238,6 +238,11 @@ class PeopleTest(TestCase):
                                    data=json.dumps(person_dict),
                                    content_type='application/json')
         
+        #update the person twice with same values should return a person
+        response = self.client.put(url,
+                                   data=json.dumps(person_dict),
+                                   content_type='application/json')
+        
         #get the same person and check the value
         response = self.client.get(url)
         
