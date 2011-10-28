@@ -17,14 +17,14 @@ urlpatterns = patterns('opensocial_people.views',
                         (r'^people/@supportedFields$',
                         'supported_fields'),
                         
-                        (r'^people/(?P<user>@?\w+)$',
+                        (r'^people/(?P<user>@?[-+_\w]+)$',
                         People.as_view(),
                         {'group': '@friends'}),
             
-                        (r'^people/(?P<user>@?\w+)/(?P<group>@?\w+)$',
+                        (r'^people/(?P<user>@?[-+_\w]+)/(?P<group>@?\w+)$',
                         People.as_view()),
-            
-                        (r'^people/(?P<user>@?\w+)/(?P<group>@?\w+)/(?P<tuser>@?\w+)$',
+                        
+                        (r'^people/(?P<user>@?[-+_\w]+)/(?P<group>@?\w+)/(?P<tuser>@?\w+)$',
                         People.as_view()),
             
         )

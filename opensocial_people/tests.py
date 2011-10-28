@@ -179,6 +179,22 @@ class PeopleTest(TestCase):
                         'querying with relationship that does not exist '
                         'should return not found')
         
+        
+        #query with not existing user
+        url = "%s%s" % (reverse('people'), "/so-me_cool+user/@self")
+        print "sent user -1"
+        response = self.client.get(url)
+        
+        self.assertEquals(response.status_code,
+                        404,
+                        'querying with relationship that does not exist '
+                        'should return not found')
+        
+        #check that it is not a django error page
+        self.assertNotContains(response,
+                               "<html>",
+                               status_code=404)
+        
     def test_person_collection_get(self):
         
         #not signed in should return unauthorized
