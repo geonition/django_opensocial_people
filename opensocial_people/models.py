@@ -45,7 +45,6 @@ class Person(models.Model):
         then nothing is done, otherwise the old person is
         expired and a new person is created.
         """
-        
         if self.json_data.json_string != json_string:
             
             #this one throws an error if not valid json --> know how to use it
@@ -73,8 +72,15 @@ class Person(models.Model):
                 self.user.first_name = json_dict['first_name']
             if json_dict.has_key('last_name'):
                 self.user.last_name = json_dict['last_name']
-            if json_dict.has_key('email') and json_dict['email'].has_key('value'):
-                self.user.email = json_dict['email']['value']
+            
+            try:
+                if json_dict.has_key('email') and json_dict['email'].has_key('value'):
+                    self.user.email = json_dict['email']['value']
+            except AttributeError:
+                if json_dict.has_key('email'):
+                    self.user.email = json_dict['email']
+                
+            
             #save the user
             self.user.save()
             
