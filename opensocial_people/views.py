@@ -159,11 +159,6 @@ class People(RequestHandler):
             
             return HttpResponseUnauthorized("You can only modify your own "
                                             "profile")
-        
-        elif request.META['CONTENT_TYPE'] != 'application/json':
-            
-            return HttpResponseBadRequest("The data sent should be of "
-                                          "application/json content type")
             
         else:
             person = Person.objects.filter(user = request.user)
