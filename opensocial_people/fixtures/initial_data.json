@@ -1,9 +1,2 @@
 [
-    {
-        "pk": null,
-        "model": "auth.group",
-        "fields": {
-            "name": "@friends"
-        }
-    }
 ]

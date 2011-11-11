@@ -6,7 +6,6 @@ from django.contrib.auth.models import Group
 from django.contrib.auth.models import Permission
 from django.utils import simplejson as json
 from models import Relationship
-from timeit import Timer
 
 
 class PeopleTest(TestCase):
@@ -182,7 +181,6 @@ class PeopleTest(TestCase):
         
         #query with not existing user
         url = "%s%s" % (reverse('people'), "/so-me_cool+user/@self")
-        print "sent user -1"
         response = self.client.get(url)
         
         self.assertEquals(response.status_code,

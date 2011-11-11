@@ -7,6 +7,7 @@ from django.http import HttpResponse
 from django.http import HttpResponseForbidden
 from django.http import HttpResponseNotFound
 from django.utils import simplejson as json
+from geonition_utils.HttpResponseExtenders import HttpResponseBadRequest
 from geonition_utils.HttpResponseExtenders import HttpResponseNotImplemented
 from geonition_utils.HttpResponseExtenders import HttpResponseConflict
 from geonition_utils.HttpResponseExtenders import HttpResponseCreated
@@ -89,8 +90,8 @@ class People(RequestHandler):
             person_objects = person_objects.filter(user__username = tuser)    
         
         elif tuser:
-            return HttpResponseForbidden("You are not permitted"
-                                         " to make this request")
+            return HttpResponseForbidden("You are not permitted "
+                                         "to make this request")
           
         #get the time parameter from get parameters TODO
         time = datetime.today()
@@ -112,8 +113,11 @@ class People(RequestHandler):
                 "totalResults": len(person_objects),
                 "entry": []
             }
+            entry = []
             for person in person_objects:
-                retobj['entry'].append(person.json())
+                entry.append(person.json())
+                
+            retobj['entry'] = entry
                 
             return HttpResponse(json.dumps(retobj))
         
@@ -156,6 +160,11 @@ class People(RequestHandler):
             return HttpResponseUnauthorized("You can only modify your own "
                                             "profile")
         
+        elif request.META['CONTENT_TYPE'] != 'application/json':
+            
+            return HttpResponseBadRequest("The data sent should be of "
+                                          "application/json content type")
+            
         else:
             person = Person.objects.filter(user = request.user)
             person = person.latest('time__create_time')
