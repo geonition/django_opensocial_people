@@ -13,14 +13,14 @@ function(user, group, callback_function) {
         url: "{% url people %}/" + user + "/" + group,
         type: "GET",
         contentType: "application/json",
-        success: function(data){
+        success: function(data, textStatus, jqXHR){
             if(callback_function !== undefined) {
-                callback_function(data);
+                callback_function(data, textStatus, jqXHR);
                 }
             },
-        error: function(e) {
+        error: function(jqXHR, textStatus, errorThrown) {
             if(callback_function !== undefined) {
-                callback_function(e);
+                callback_function(jqXHR, textStatus, errorThrown);
             }
         },
         dataType: "json",
@@ -56,18 +56,18 @@ function(user, person_object, callback_function) {
         type: "PUT",
         data: JSON.stringify(person_object),
         contentType: "application/json",
-        success: function(data){
+        success: function(data, textStatus, jqXHR) {
             if(callback_function !== undefined) {
-                callback_function(data);
+                callback_function(data, textStatus, jqXHR);
                 }
             },
-        error: function(e) {
+        error: function(jqXHR, textStatus, errorThrown) {
             if(callback_function !== undefined) {
-                callback_function(e);
+                callback_function(jqXHR, textStatus, errorThrown);
             }
         },
         dataType: "json",
-        beforeSend: function(xhr){
+        beforeSend: function(xhr) {
             //for cross site authentication using CORS
             xhr.withCredentials = true;
             }
@@ -78,6 +78,9 @@ function(user, person_object, callback_function) {
  This function returns a array of key names
  or a JSON object where keys are connected
  with the type of the value.
+ 
+ The types follow the JSON types defined
+ at json.org
 */
 gnt.opensocial_people['get_supported_fields'] =
 function(with_values, callback_function) {
@@ -89,14 +92,14 @@ function(with_values, callback_function) {
         url: "{% url people %}/@supportedFields?types=" + with_values,
         type: "GET",
         contentType: "application/json",
-        success: function(data){
+        success: function(data, textStatus, jqXHR){
             if(callback_function !== undefined) {
-                callback_function(data);
+                callback_function(data, textStatus, jqXHR);
                 }
             },
-        error: function(e) {
+        error: function(jqXHR, textStatus, errorThrown) {
             if(callback_function !== undefined) {
-                callback_function(e);
+                callback_function(jqXHR, textStatus, errorThrown);
             }
         },
         dataType: "json",
@@ -121,14 +124,14 @@ function(initial_user,
         type: "POST",
         data: JSON.stringify(target_user_person_object),
         contentType: "application/json",
-        success: function(data){
+        success: function(data, textStatus, jqXHR){
             if(callback_function !== undefined) {
-                callback_function(data);
+                callback_function(data, textStatus, jqXHR);
                 }
             },
-        error: function(e) {
+        error: function(jqXHR, textStatus, errorThrown) {
             if(callback_function !== undefined) {
-                callback_function(e);
+                callback_function(jqXHR, textStatus, errorThrown);
             }
         },
         dataType: "json",
@@ -153,14 +156,14 @@ function(initial_user,
         url: "{% url people %}/" + initial_user + "/" + group + "/" + target_user,
         type: "DELETE",
         contentType: "application/json",
-        success: function(data){
+        success: function(data, textStatus, jqXHR){
             if(callback_function !== undefined) {
-                callback_function(data);
+                callback_function(data, textStatus, jqXHR);
                 }
             },
-        error: function(e) {
+        error: function(jqXHR, textStatus, errorThrown) {
             if(callback_function !== undefined) {
-                callback_function(e);
+                callback_function(jqXHR, textStatus, errorThrown);
             }
         },
         dataType: "json",
