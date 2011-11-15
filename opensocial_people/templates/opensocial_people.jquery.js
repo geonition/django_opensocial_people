@@ -39,6 +39,10 @@ function(user, group, callback_function) {
 gnt.opensocial_people['get_person'] =
 function(user, callback_function) {
     
+    if(user === undefined) {
+        user = '@me';
+    }
+    
     gnt.opensocial_people.get_list_of_persons(user,
                                               '@self',
                                               callback_function);
