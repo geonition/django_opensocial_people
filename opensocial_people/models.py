@@ -47,17 +47,38 @@ class Person(models.Model):
         """
         if self.json_data.json_string != json_string:
             
-            #this one throws an error if not valid json --> know how to use it
-            #otherwise you get a 500
-            json_dict = json.loads(json_string)
+            json_dict = json.loads(self.json_data.json_string)
+            # this one throws an error if not valid json -->
+            # you get a 500
+            json_dict.update(json.loads(json_string))
             
             #set old feature as expired
             self.time.expire()
             self.save()
             
+            #check the values that should be updated in the user model
+            if json_dict.has_key('first_name'):
+                self.user.first_name = json_dict['first_name']
+                del json_dict['first_name']
+            if json_dict.has_key('last_name'):
+                self.user.last_name = json_dict['last_name']
+                del json_dict['last_name']
+            
+            try:
+                if json_dict.has_key('email') and json_dict['email'].has_key('value'):
+                    self.user.email = json_dict['email']['value'] #TODO all the rest email values            
+                    del json_dict['email']
+            except AttributeError:
+                if json_dict.has_key('email'):
+                    self.user.email = json_dict['email']            
+                    del json_dict['email']
+            
+            #save the user
+            self.user.save()
+            
             #save the new property
             new_json = JSON(collection='opensocial_people.person',
-                            json_string=json_string)
+                            json_string=json.dumps(json_dict))
             new_json.save()
             
             new_time = TimeD()
@@ -66,23 +87,6 @@ class Person(models.Model):
                                 json_data = new_json,
                                 time = new_time)
             new_person.save()
-            
-            #check the values that should be updated in the user model
-            if json_dict.has_key('first_name'):
-                self.user.first_name = json_dict['first_name']
-            if json_dict.has_key('last_name'):
-                self.user.last_name = json_dict['last_name']
-            
-            try:
-                if json_dict.has_key('email') and json_dict['email'].has_key('value'):
-                    self.user.email = json_dict['email']['value']
-            except AttributeError:
-                if json_dict.has_key('email'):
-                    self.user.email = json_dict['email']
-                
-            
-            #save the user
-            self.user.save()
             
             return new_person
         

@@ -268,18 +268,19 @@ class PeopleTest(TestCase):
                           'guess',
                           'The last name was not updated')
         
-        
-        #update with really long json, try to reproduce the idnex error
-        json_dict = {}
-        for i in range(7000):
-            json_dict[str(i)] = "some string"
-            
-        json_str = json.dumps(json_dict)
-        
-        #update the person
+        #test that only part of the profile can be updated
+        new_values = {'new_value': True}
         response = self.client.put(url,
-                                   data=json_str,
+                                   data=json.dumps(new_values),
                                    content_type='application/json')
+        new_person_dict = json.loads(response.content)
+        self.assertEquals(new_person_dict['last_name'],
+                          'guess',
+                          'The last name was not the same after update')
+        
+        self.assertEquals(new_person_dict['new_value'],
+                          True,
+                          'The new value was added')
                
     def test_relationship_create(self):
         # if the user is not authenticated it cannot create relationships
