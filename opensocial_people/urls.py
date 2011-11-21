@@ -4,11 +4,11 @@ from django.conf.urls.defaults import url
 from views import People
 
 urlpatterns = patterns('opensocial_people.views',
-                       url(r'^people$',
+                        url(r'^people$',
                            People.as_view(),
                            {'user': '@me',
                             'group': '@friends'},
-                            name="people"),            
+                            name="people"),
                         
                         #this should work as defined in opensocial 2.0
                         #except with one addition if passed with ?types=true
@@ -26,5 +26,9 @@ urlpatterns = patterns('opensocial_people.views',
                         
                         (r'^people/(?P<user>@?[-+_\w]+)/(?P<group>@?\w+)/(?P<tuser>@?\w+)$',
                         People.as_view()),
+                        
+                        url(r'^confirm-email/(\w+)/$',
+                            'confirm_email',
+                            name="api_emailconfirmation"),
             
         )

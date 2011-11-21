@@ -6,6 +6,9 @@ from django.db.utils import IntegrityError
 from django.http import HttpResponse
 from django.http import HttpResponseForbidden
 from django.http import HttpResponseNotFound
+from django.template import RequestContext
+from django.template import TemplateDoesNotExist
+from django.template.loader import get_template
 from django.utils import simplejson as json
 from geonition_utils.HttpResponseExtenders import HttpResponseBadRequest
 from geonition_utils.HttpResponseExtenders import HttpResponseNotImplemented
@@ -13,6 +16,8 @@ from geonition_utils.HttpResponseExtenders import HttpResponseConflict
 from geonition_utils.HttpResponseExtenders import HttpResponseCreated
 from geonition_utils.HttpResponseExtenders import HttpResponseUnauthorized
 from geonition_utils.views import RequestHandler
+from models import EmailAddress
+from models import EmailConfirmation
 from models import Person
 from models import Relationship
     
@@ -156,7 +161,6 @@ class People(RequestHandler):
                                             "this request")
             
         elif request.user.username != user:
-            
             return HttpResponseUnauthorized("You can only modify your own "
                                             "profile")
             
@@ -200,6 +204,23 @@ class People(RequestHandler):
                                 content_type='application/json')
             
 
+# View used for confirming a user email using the confirmation key
+def confirm_email(request, confirmation_key):
+    confirmation_key = confirmation_key.lower()
+    
+    email_address = EmailConfirmation.objects.confirm_email(confirmation_key)
+    
+    template = None
+    try: # try to get customized template
+        template = get_template("emailconfirmation/confirm_email.html")
+    except TemplateDoesNotExist: # get default template
+        template = get_template("emailconfirmation/default_confirm_template.html")
+        
+    # the template will handle the invalid confirmation key
+    # if the confirmation key was invalid the email_address object is None
+    return HttpResponse(template.render(RequestContext(request,
+                                                       {"email_address": email_address})))
+    
 
 def supported_fields(request):
     """

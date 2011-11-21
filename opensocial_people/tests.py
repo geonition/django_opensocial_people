@@ -1,12 +1,14 @@
-from django.test import TestCase
-from django.test.client import Client
+from django.core import mail
 from django.core.urlresolvers import reverse
 from django.contrib.auth.models import User
 from django.contrib.auth.models import Group
 from django.contrib.auth.models import Permission
+from django.test import TestCase
+from django.test.client import Client
 from django.utils import simplejson as json
+from models import EmailAddress
+from models import EmailConfirmation
 from models import Relationship
-
 
 class PeopleTest(TestCase):
     
@@ -17,25 +19,25 @@ class PeopleTest(TestCase):
         
         #create users
         self.user1 = User.objects.create_user('user1',
-                                              'test1@test.com',
+                                              'testa@test.com',
                                               'user1')
         self.user2 = User.objects.create_user('user2',
-                                              'test2@test.com',
+                                              'testb@test.com',
                                               'user2')
         self.user3 = User.objects.create_user('user3',
-                                              'test3@test.com',
+                                              'testc@test.com',
                                               'user3')    
         self.user4 = User.objects.create_user('user4',
-                                              'test4@test.com',
+                                              'testd@test.com',
                                               'user4')
         self.user5 = User.objects.create_user('user5',
-                                              'test5@test.com',
+                                              'teste@test.com',
                                               'user5')
         self.user6 = User.objects.create_user('user6',
-                                              'test6@test.com',
+                                              'testf@test.com',
                                               'user6')
         self.user7 = User.objects.create_user('user7',
-                                              'test7@test.com',
+                                              '',
                                               'user7')
         
         #create a group
@@ -472,6 +474,156 @@ class PeopleTest(TestCase):
                            "time.expire_time": "string",
                            "email": "object"},
                           "The supported field types returned was not correct")
+    
+    def test_email(self):
+        url = "%s%s" % (reverse('people'), "/@me/@self")
+        self.client.login(username='user7', password='user7')
+        mail.outbox = []
+        
+        #test with email in opensocial format
+        values = {
+            'email': {
+                'value': u'test1@test.com'
+            }
+        }
+        response = self.client.put(url,
+                                   data=json.dumps(values),
+                                   content_type='application/json')
+        
+        self.assertEquals(json.loads(response.content).has_key('email'),
+                          True,
+                          'no email was found from response')
+        
+        #not confirmed yet, should return empty email
+        self.assertEquals(json.loads(response.content)['email'],
+                          {u'value': u'',
+                           u'primary': True,
+                           u'type': u''},
+                          'the email object was not correct')
+        
+        #one confirmation email should have been sent
+        self.assertEquals(len(mail.outbox),
+                          1,
+                          'The email saving did not send a confirmation email')
+        self.assertEquals('test1@test.com',
+                          mail.outbox[0].to[0],
+                          'The email sent did not go to the right address')
+        
+        #confirm and try again
+        email_address = EmailAddress.objects.get(email = "test1@test.com")
+        email_confirmation = EmailConfirmation.objects.get(email_address = email_address)
+
+        response = self.client.get(reverse('api_emailconfirmation',
+                                           args=[email_confirmation.confirmation_key]))
+        
+        response = self.client.get(url)
+        
+        self.assertEquals(json.loads(response.content)['email'],
+                          {u'value': u'test1@test.com',
+                           u'primary': True,
+                           u'type': u''},
+                          'wrong email found from response')
+        
+        #test changing email in invalid format
+        values = {
+            'email': 'test2@test.com'
+        }
+        response = self.client.put(url,
+                                   data=json.dumps(values),
+                                   content_type='application/json')
+        
+        self.assertEquals(json.loads(response.content).has_key('email'),
+                          True,
+                          'no email was found from response')
+        
+        self.assertEquals(json.loads(response.content)['email'],
+                          {u'value': u'test1@test.com',
+                           u'primary': True,
+                           u'type': u''},
+                          'the wrong email was found from response')
+        
+        #two confirmation emails should have been sent
+        self.assertEquals(len(mail.outbox),
+                          2,
+                          'The email saving did not send a confirmation email')
+        self.assertEquals('test2@test.com',
+                          mail.outbox[1].to[0],
+                          'The email sent did not go to the right address')
+        
+        #confirm and try again
+        email_address = EmailAddress.objects.get(email = "test2@test.com")
+        email_confirmation = EmailConfirmation.objects.get(email_address = email_address)
+
+        response = self.client.get(reverse('api_emailconfirmation',
+                                           args=[email_confirmation.confirmation_key]))
+        
+        response = self.client.get(url)
+        
+        self.assertEquals(json.loads(response.content)['email'],
+                          {u'value': u'test2@test.com',
+                           u'primary': True,
+                           u'type': u''},
+                          'after confirmation the email was not changed')
+        
+        #test changing to empty email
+        values = {
+            'email': ''
+        }
+        response = self.client.put(url,
+                                   data=json.dumps(values),
+                                   content_type='application/json')
+        
+        self.assertEquals(json.loads(response.content).has_key('email'),
+                          True,
+                          'no email was found from response')
+        
+        self.assertEquals(json.loads(response.content)['email'],
+                          {u'value': u'',
+                           u'primary': True,
+                           u'type': u''},
+                          'empty email was not updated to empty')
+        
+        #test adding same email twice
+        values = {
+            'email': 'test2@test.com'
+        }
+        response = self.client.put(url,
+                                   data=json.dumps(values),
+                                   content_type='application/json')
+        response = self.client.put(url,
+                                   data=json.dumps(values),
+                                   content_type='application/json')
+        
+        #validate email
+        email_address = EmailAddress.objects.get(email = "test2@test.com")
+        email_confirmation = EmailConfirmation.objects.get(email_address = email_address)
+
+        response = self.client.get(reverse('api_emailconfirmation',
+                                args=[email_confirmation.confirmation_key]))
+        
+        response = self.client.get(url)
+        
+        
+        self.assertEquals(json.loads(response.content).has_key('email'),
+                          True,
+                          'no email was found from response')
+        
+        self.assertEquals(json.loads(response.content)['email'],
+                          {u'value': u'test2@test.com',
+                           u'primary': True,
+                           u'type': u''},
+                          'no email was found from response')
+        
+        
+        #creating a user with email should send a confirmation email
+        mail.outbox = []
+        User.objects.create_user(username="hasanemail",
+                                 password="email",
+                                 email="very_unique@unique.com")
+        
+        self.assertEquals(len(mail.outbox),
+                          1,
+                          'email was not sent when creating a user')
         
     def tearDown(self):
         

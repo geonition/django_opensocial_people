@@ -1,0 +1,9 @@
+{% load i18n %}{% blocktrans with current_site.name as site_name %}Hei!
+
+Olet rekisteröinyt tämän sähköpostiosoitteen {{ user }}-käyttäjänimellä {{ site_name }} -verkkopalvelussa.
+
+Vahvistaaksesi rekisteröinnin, klikkaa oheista linkkiä: {{ activate_url }}
+
+Terveisin pehmoGIS-tiimi
+
+{% endblocktrans %}
