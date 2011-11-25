@@ -148,6 +148,9 @@ class People(RequestHandler):
                                             "authenticated to make this "
                                             "request")
     def put(self, request, *args, **kwargs):
+        """
+        Put requests updates an person object.
+        """
         
         #get the values, only user matters
         user = kwargs.get('user', None)

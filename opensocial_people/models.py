@@ -1,5 +1,7 @@
 from copy import deepcopy
 from datetime import datetime
+from time import mktime
+from time import time
 from datetime import timedelta
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -7,8 +9,8 @@ from django.contrib.sites.models import Site
 from django.core.urlresolvers import NoReverseMatch
 from django.core.urlresolvers import reverse
 from django.core.validators import email_re
-from django.db import models
 from django.db import IntegrityError
+from django.db import models
 from django.db.models.signals import post_save
 from django.db.models.signals import pre_save
 from django.dispatch import Signal
@@ -108,18 +110,42 @@ class Person(models.Model):
         This function returns a dictionary representation of this
         object
         """
-        #default person includes django user values
-        default_person = {
-            "id": self.user.username,
-            "displayName": self.user.username,
-            "first_name": self.user.first_name,
-            "last_name": self.user.last_name,
-            "email": {
-                "value": self.user.email,
-                "type": "",
-                "primary": True
+        #query email for person
+        email_obj = EmailAddress.objects.all()
+        
+        try:
+            email_obj = email_obj.filter(user = self.user,
+                                         primary = True)
+            email_obj = email_obj.latest('updated')
+        
+            #default person includes django user values
+            default_person = {
+                "id": self.user.username,
+                "displayName": self.user.username,
+                "first_name": self.user.first_name,
+                "last_name": self.user.last_name,
+                "email": {
+                    "value": email_obj.email,
+                    "type": email_obj.type,
+                    "primary": email_obj.primary,
+                    "verified": email_obj.verified
+                }
             }
-        }
+        except EmailAddress.DoesNotExist:
+            #default person includes django user values
+            default_person = {
+                "id": self.user.username,
+                "displayName": self.user.username,
+                "first_name": self.user.first_name,
+                "last_name": self.user.last_name,
+                "email": {
+                    "value": '',
+                    "type": '',
+                    "primary": False,
+                    "verified": False
+                }
+            }    
+        
         json_data_dict = json.loads(self.json_data.json_string)
         json_data_dict.update(default_person)
         return json_data_dict
@@ -138,7 +164,8 @@ class Person(models.Model):
             'email': 'object',
             'email.value': 'string',
             'email.type': 'string',
-            'email.primary': True
+            'email.primary': True,
+            'email.verified': True
         }
         fields = self.json_data.get_fields()
         fields.update(self.time.get_fields())
@@ -170,9 +197,10 @@ def create_person(sender, instance, created, **kwargs):
             "first_name": instance.first_name,
             "last_name": instance.last_name,
             "email": {
-                "value": "",
+                "value": instance.email,
                 "type": "",
-                "primary": True
+                "primary": True,
+                "verified": False
             }
         }
         json_obj = JSON(collection='opensocial_people_person',
@@ -222,7 +250,6 @@ send_mail = get_send_mail()
 class EmailAddressManager(models.Manager):
 
     def add_email(self, user, email):
-        
         #check conflict, weired DatabaseError thrown otherwise
         #TODO check why DatabaseError is thrown
         existing_email = self.filter(email=email)
@@ -238,6 +265,9 @@ class EmailAddressManager(models.Manager):
             return self.get(user=user, primary=True)
         except EmailAddress.DoesNotExist:
             return None
+        
+    def delete_user_emails(self, user):
+        self.filter(user = user).delete()
   
 
 class EmailAddress(models.Model):
@@ -246,18 +276,19 @@ class EmailAddress(models.Model):
     email = models.EmailField(unique=True)
     verified = models.BooleanField(default=False)
     primary = models.BooleanField(default=False)
+    updated = models.TimeField(auto_now=True)
     type = models.CharField(default='',
                             max_length=20)
 
     objects = EmailAddressManager()
 
-    def set_as_primary(self, conditional=False):
+    def set_as_primary(self):
         old_primary = EmailAddress.objects.get_primary(self.user)
+        
         if old_primary:
-            if conditional:
-                return False
             old_primary.primary = False
             old_primary.save()
+        
         self.primary = True
         self.save()
         self.user.email = self.email
@@ -284,15 +315,18 @@ class EmailConfirmationManager(models.Manager):
             return None
         
         if not confirmation.key_expired():
+            
             email_address = confirmation.email_address
-            #Cristian: update the User object with the confirmed email
-            email_address.user.email = email_address.email
             email_address.verified = True
-            email_address.set_as_primary(conditional=True)
+            email_address.set_as_primary()
             email_address.save()
-            email_confirmed.send(sender=self.model, email_address=email_address)
+            email_confirmed.send(sender=self.model,
+                                 email_address=email_address)
+            
+            #update the User object with the confirmed email
             email_address.user.email = email_address.email
             email_address.user.save()
+            
             return email_address
 
     def send_confirmation(self, email_address):
@@ -301,7 +335,7 @@ class EmailConfirmationManager(models.Manager):
         confirmation_key = sha_constructor(salt + email_address.email).hexdigest()
         current_site = Site.objects.get_current()
         
-        path = reverse("api_emailconfirmation",
+        path = reverse('api_emailconfirmation',
                         args=[confirmation_key])
         
         #TODO this should definitelly be https or?   
@@ -337,6 +371,7 @@ class EmailConfirmationManager(models.Manager):
         for confirmation in self.all():
             if confirmation.key_expired():
                 confirmation.delete()
+    
 
 class EmailConfirmation(models.Model):
 
@@ -350,6 +385,7 @@ class EmailConfirmation(models.Model):
         expiration_date = self.sent + timedelta(
             days=getattr(settings, "EMAIL_CONFIRMATION_DAYS", 3))
         return expiration_date <= datetime.now()
+        
     key_expired.boolean = True
 
     def __unicode__(self):
@@ -362,35 +398,53 @@ class EmailConfirmation(models.Model):
 
 #email saving signal
 def confirm_email(sender, instance, **kwargs):
-    
-    old_person_email = instance.user.email
-    
     person_email = instance.json_data.json().get('email', {})
+    primary = False
+    type = ''
     try:
         temp_person_email = person_email.get('value', '')
+        primary = person_email.get('primary', False)
+        type = person_email.get('type', '')
         person_email = temp_person_email
     except AttributeError:
         pass
     
-    if person_email != old_person_email and email_re.match(person_email):
+    
+    email_address = None
+    
+    if email_re.match(person_email):
         email_address = EmailAddress.objects.add_email(instance.user,
                                                         person_email)            
     
+    #person email confirmation if user was created some other way
     elif person_email == '':
         
-        if instance.id != None:
-            instance.user.email = ''
-            instance.user.save()
-        elif email_re.match(instance.user.email):
+        cdate= instance.user.date_joined
+        seconds = time() - mktime(cdate.timetuple())
+        timediff = timedelta(seconds=seconds)
+        
+        # problem with id being none when person object is updated
+        # new person created but not because user is created
+        if instance.id == None and email_re.match(instance.user.email):
             email_address = EmailAddress.objects.add_email(instance.user,
                                                         instance.user.email)
+            
+        else:
             instance.user.email = ''
             instance.user.save()
             
+            EmailAddress.objects.delete_user_emails(instance.user)
+            
+        
+    if email_address != None:
+        email_address.primary = primary
+        email_address.type = type
+        email_address.save()
+    
     
     instance.json_data.remove_values(['email'])
 
 
-pre_save.connect(confirm_email,
+post_save.connect(confirm_email,
                   sender=Person,
                   dispatch_uid="opensocial_people_person")

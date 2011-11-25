@@ -131,7 +131,7 @@ class PeopleTest(TestCase):
                           'Last1',
                           'The first_name was not Last1 for user1')
         self.assertEquals(response_dict['email']['value'],
-                          'some@some.org',
+                          'testa@test.com',
                           'The email was not some@some.org for user1')
         
         #query other persons
@@ -444,6 +444,7 @@ class PeopleTest(TestCase):
     def test_person_supported_fields(self):
         url = "%s%s" % (reverse('people'), '/@supportedFields')
         response = self.client.get(url)
+        
         self.assertEquals(json.loads(response.content),
                           ["username",
                            "last_name",
@@ -452,6 +453,7 @@ class PeopleTest(TestCase):
                            "email.value",
                            "email.type",
                            "id",
+                           "email.verified",
                            "first_name",
                            "displayName",
                            "time.expire_time",
@@ -469,6 +471,7 @@ class PeopleTest(TestCase):
                            "email.value": "string",
                            "email.type": "string",
                            "id": "string",
+                           "email.verified": True,
                            "first_name": "string",
                            "displayName": "string",
                            "time.expire_time": "string",
@@ -483,7 +486,8 @@ class PeopleTest(TestCase):
         #test with email in opensocial format
         values = {
             'email': {
-                'value': u'test1@test.com'
+                'value': u'test1@test.com',
+                'primary': True
             }
         }
         response = self.client.put(url,
@@ -496,9 +500,10 @@ class PeopleTest(TestCase):
         
         #not confirmed yet, should return empty email
         self.assertEquals(json.loads(response.content)['email'],
-                          {u'value': u'',
-                           u'primary': True,
-                           u'type': u''},
+                          {u'primary': True,
+                           u'type': u'',
+                           u'value': u'test1@test.com',
+                           u'verified': False},
                           'the email object was not correct')
         
         #one confirmation email should have been sent
@@ -521,13 +526,15 @@ class PeopleTest(TestCase):
         self.assertEquals(json.loads(response.content)['email'],
                           {u'value': u'test1@test.com',
                            u'primary': True,
-                           u'type': u''},
+                           u'type': u'',
+                           u'verified': True},
                           'wrong email found from response')
         
         #test changing email in invalid format
         values = {
             'email': 'test2@test.com'
         }
+        
         response = self.client.put(url,
                                    data=json.dumps(values),
                                    content_type='application/json')
@@ -539,7 +546,8 @@ class PeopleTest(TestCase):
         self.assertEquals(json.loads(response.content)['email'],
                           {u'value': u'test1@test.com',
                            u'primary': True,
-                           u'type': u''},
+                           u'type': u'',
+                           u'verified': True},
                           'the wrong email was found from response')
         
         #two confirmation emails should have been sent
@@ -560,9 +568,10 @@ class PeopleTest(TestCase):
         response = self.client.get(url)
         
         self.assertEquals(json.loads(response.content)['email'],
-                          {u'value': u'test2@test.com',
-                           u'primary': True,
-                           u'type': u''},
+                          {'value': 'test2@test.com',
+                           'primary': True,
+                           'type': '',
+                           'verified': True},
                           'after confirmation the email was not changed')
         
         #test changing to empty email
@@ -579,8 +588,9 @@ class PeopleTest(TestCase):
         
         self.assertEquals(json.loads(response.content)['email'],
                           {u'value': u'',
-                           u'primary': True,
-                           u'type': u''},
+                           u'primary': False,
+                           u'type': u'',
+                           'verified': False},
                           'empty email was not updated to empty')
         
         #test adding same email twice
@@ -611,7 +621,8 @@ class PeopleTest(TestCase):
         self.assertEquals(json.loads(response.content)['email'],
                           {u'value': u'test2@test.com',
                            u'primary': True,
-                           u'type': u''},
+                           u'type': u'',
+                           u'verified': True},
                           'no email was found from response')
         
         
