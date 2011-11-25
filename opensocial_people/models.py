@@ -335,8 +335,11 @@ class EmailConfirmationManager(models.Manager):
         confirmation_key = sha_constructor(salt + email_address.email).hexdigest()
         current_site = Site.objects.get_current()
         
-        path = reverse('api_emailconfirmation',
-                        args=[confirmation_key])
+        try:
+            path = reverse('api_emailconfirmation',
+                            args=[confirmation_key])
+        except NoReverseMatch:
+            return None
         
         #TODO this should definitelly be https or?   
         activate_url = u"http://%s%s" % (unicode(current_site.domain), path)
