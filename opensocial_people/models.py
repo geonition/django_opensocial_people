@@ -333,7 +333,11 @@ class EmailConfirmationManager(models.Manager):
         #check email addres
         salt = sha_constructor(str(random())).hexdigest()[:5]
         confirmation_key = sha_constructor(salt + email_address.email).hexdigest()
-        current_site = Site.objects.get_current()
+        
+        try:
+            current_site = Site.objects.get_current()
+        except Site.DoesNotExist:
+            return None
         
         try:
             path = reverse('api_emailconfirmation',
