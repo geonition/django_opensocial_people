@@ -9,6 +9,7 @@ from django.utils import simplejson as json
 from models import EmailAddress
 from models import EmailConfirmation
 from models import Relationship
+from models import Person
 
 class PeopleTest(TestCase):
     
@@ -230,7 +231,87 @@ class PeopleTest(TestCase):
         self.assertContains(response,
                             '"username": "user5"',
                             status_code = 200)
-                
+        
+        #tests querying with different GET parameters
+        
+        #give permission to user5 data_view
+        self.user5.user_permissions.add(Permission.objects.get(codename='data_view'))
+        
+        #set age, gender and car values to each person
+        person_values1 = {
+            'age': 25,
+            'gender': 'male',
+            'car': False
+        }
+        person_values2 = {
+            'age': 26,
+            'gender': 'female',
+            'car': True
+        }
+        person1 = Person.objects.filter(user=self.user1)[0]
+        person1.update(json.dumps(person_values1))
+        person2 = Person.objects.filter(user=self.user2)[0]
+        person2.update(json.dumps(person_values2))
+        
+        #should return all users
+        url = "%s%s" % (reverse('people'), "/@all/@self")
+        response = self.client.get(url)
+        self.assertContains(response,
+                            '"username": "user5"',
+                            status_code = 200)
+        self.assertContains(response,
+                            '"username": "user1"',
+                            status_code = 200)
+        self.assertContains(response,
+                            '"username": "user2"',
+                            status_code = 200)
+        self.assertContains(response,
+                            '"age": 25',
+                            status_code = 200)
+        self.assertContains(response,
+                            '"age": 26',
+                            status_code = 200)
+        
+        #should only return user1
+        url = "%s%s" % (reverse('people'), "/@all/@self?age=25")
+        response = self.client.get(url)
+        self.assertContains(response,
+                            '"username": "user1"',
+                            status_code = 200)
+        self.assertNotContains(response,
+                            '"username": "user2"',
+                            status_code = 200)
+        
+        #should only contain user2
+        url = "%s%s" % (reverse('people'), "/@all/@self?age__max=25")
+        response = self.client.get(url)
+        self.assertContains(response,
+                            '"username": "user1"',
+                            status_code = 200)
+        self.assertNotContains(response,
+                            '"username": "user2"',
+                            status_code = 200)
+        
+        #should only contain user1
+        url = "%s%s" % (reverse('people'), "/@all/@self?age__min=26")
+        response = self.client.get(url)
+        self.assertNotContains(response,
+                            '"username": "user1"',
+                            status_code = 200)
+        self.assertContains(response,
+                            '"username": "user2"',
+                            status_code = 200)
+        
+        #querying a range should return only user2
+        url = "%s%s" % (reverse('people'), "/@all/@self?age__min=26&age__max=26")
+        response = self.client.get(url)
+        self.assertNotContains(response,
+                            '"username": "user1"',
+                            status_code = 200)
+        self.assertContains(response,
+                            '"username": "user2"',
+                            status_code = 200)
+        
     def test_person_update(self):
         #updating the person with PUT requests
         #opensocial defines this with POST request but that conflicts with

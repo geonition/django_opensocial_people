@@ -1,4 +1,5 @@
 from datetime import datetime
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import transaction
 from django.db.models import Q
@@ -15,6 +16,7 @@ from geonition_utils.HttpResponseExtenders import HttpResponseNotImplemented
 from geonition_utils.HttpResponseExtenders import HttpResponseConflict
 from geonition_utils.HttpResponseExtenders import HttpResponseCreated
 from geonition_utils.HttpResponseExtenders import HttpResponseUnauthorized
+from geonition_utils.models import JSON
 from geonition_utils.views import RequestHandler
 from models import EmailAddress
 from models import EmailConfirmation
@@ -69,19 +71,25 @@ class People(RequestHandler):
                                          "to make this request")
         
         #create a person queryset
-        person_objects = Person.objects.all()
+        if request.user.has_perm('opensocial_people.data_view'):
+            person_objects = Person.objects.all()
+        else:
+            person_objects = Person.objects.filter(user = request.user)
         
         #create a relationship queryset
         relationship_objects = Relationship.objects.all()
         
         #filter the Persons according to groups
         if user and tuser and group:
-            relationship_objects = relationship_objects.filter(initial_user__username = user)
+            if user != '@all':
+                relationship_objects = relationship_objects.filter(initial_user__username = user)
+            
             relationship_objects = relationship_objects.filter(group = group)
             relationship_objects = relationship_objects.filter(target_user__username = tuser)
         
         elif user and group:
-            relationship_objects = relationship_objects.filter(initial_user__username = user)
+            if user != '@all':
+                relationship_objects = relationship_objects.filter(initial_user__username = user)
             relationship_objects = relationship_objects.filter(group = group)
             
         #filter the persons that is not target users in the relationships
@@ -98,7 +106,36 @@ class People(RequestHandler):
             return HttpResponseForbidden("You are not permitted "
                                          "to make this request")
           
-        #get the time parameter from get parameters TODO
+        
+        # handle the get parameters
+        if getattr(settings, 'USE_MONGODB', False):
+            
+            spec = {}
+            for key, value in request.GET.items():
+                value = json.loads(value)
+                
+                if key.endswith('__min'):
+                    key = key.replace('__min', '')
+                    if spec.has_key(key):
+                        spec[key].update({'$gte': value})
+                    else:
+                        spec[key] = {'$gte': value}
+                        
+                elif key.endswith('__max'):
+                    key = key.replace('__max', '')
+                    if spec.has_key(key):
+                        spec[key].update({'$lte': value})
+                    else:
+                        spec[key] = {'$lte': value}
+                else:
+                    spec[key] = value
+                
+            if spec != {}:
+                mqs = JSON.mongodb.find(spec)
+                mqs = mqs.values_list('id', flat=True)
+                person_objects = person_objects.filter(json_data__id__in = mqs)
+                
+        #get the time parameter from get parameters #TODO
         time = datetime.today()
         
         #query the time

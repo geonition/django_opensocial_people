@@ -5,6 +5,12 @@ gnt['opensocial_people'] = {};
 This function retrives a list of person objects. The list of people
 that is returned has a connection from user and belongs to group.
 
+If the user is set as @all and the group as @self
+it will retrieve all users.
+
+If you want to put additional restrictions you can add
+limiting parameters to the group e.g. @self?age=40&married=true
+
 */
 gnt.opensocial_people['get_list_of_persons'] =
 function(user, group, callback_function) {
