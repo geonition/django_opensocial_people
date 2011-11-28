@@ -283,7 +283,7 @@ class PeopleTest(TestCase):
                             status_code = 200)
         
         #should only contain user2
-        url = "%s%s" % (reverse('people'), "/@all/@self?age__max=25")
+        url = "%s%s" % (reverse('people'), "/@all/@self?age__max=25&gender=male&car=false")
         response = self.client.get(url)
         self.assertContains(response,
                             '"username": "user1"',

@@ -112,7 +112,10 @@ class People(RequestHandler):
             
             spec = {}
             for key, value in request.GET.items():
-                value = json.loads(value)
+                try:
+                    value = json.loads(value)
+                except ValueError:
+                    pass
                 
                 if key.endswith('__min'):
                     key = key.replace('__min', '')
