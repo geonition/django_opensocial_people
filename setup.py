@@ -10,7 +10,11 @@ setup(
     include_package_data=True,
     package_data = {
         "opensocial_people": [
-            "templates/*.js"
+            "templates/opensocial_people.jquery.js",
+            "templates/email_base.html",
+            "templates/emailconfirmation/default_confirm_template.html",
+            "templates/email_confirmation_message.txt",
+            "templates/email_confiramtion_subject.txt"
         ],
     },
     zip_safe=False,
