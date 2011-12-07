@@ -3,7 +3,7 @@ from setuptools import find_packages
 
 setup(
     name='opensocial_people',
-    version='1.1.2',
+    version='2.0.0',
     author='Kristoffer Snabb',
     url='https://github.com/geonition/django_opensocial_people',
     packages=find_packages(),
