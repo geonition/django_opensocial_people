@@ -1,1 +1,3 @@
-{% load i18n %}{% blocktrans with current_site.name as site_name %}Vahvista sähköpostiosoitteesi {{ site_name }} -verkkopalveluun{% endblocktrans %}
+{% load i18n %}{% blocktrans with current_site.name as site_name %}
+Vahvista sähköpostiosoitteesi {{ site_name }} -verkkopalveluun
+{% endblocktrans %}
