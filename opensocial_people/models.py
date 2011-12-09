@@ -273,7 +273,7 @@ class EmailAddressManager(models.Manager):
 class EmailAddress(models.Model):
 
     user = models.ForeignKey(User)
-    email = models.EmailField(unique=True)
+    email = models.EmailField()
     verified = models.BooleanField(default=False)
     primary = models.BooleanField(default=False)
     updated = models.TimeField(auto_now=True)
@@ -345,8 +345,8 @@ class EmailConfirmationManager(models.Manager):
         except NoReverseMatch:
             return None
         
-        #TODO this should definitelly be https or?   
-        activate_url = u"http://%s%s" % (unicode(current_site.domain), path)
+        #TODO this should definitelly be https or? enable also http,,   
+        activate_url = u"https://%s%s" % (unicode(current_site.domain), path)
         
         context = {
             "user": email_address.user,
