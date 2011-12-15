@@ -26,9 +26,5 @@ urlpatterns = patterns('opensocial_people.views',
                         
                         (r'^people/(?P<user>@?[-+_\w]+)/(?P<group>@?\w+)/(?P<tuser>@?\w+)$',
                         People.as_view()),
-                        
-                        url(r'^confirm_email/(\w+)/$',
-                            'confirm_email',
-                            name="api_emailconfirmation"),
             
         )

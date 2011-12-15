@@ -18,8 +18,6 @@ from geonition_utils.HttpResponseExtenders import HttpResponseCreated
 from geonition_utils.HttpResponseExtenders import HttpResponseUnauthorized
 from geonition_utils.models import JSON
 from geonition_utils.views import RequestHandler
-from models import EmailAddress
-from models import EmailConfirmation
 from models import Person
 from models import Relationship
     
@@ -194,7 +192,6 @@ class People(RequestHandler):
         
         #get the values, only user matters
         user = kwargs.get('user', None)
-        
         names = self.get_real_name(request,
                                    username=user)
         user = names[0]
@@ -245,25 +242,6 @@ class People(RequestHandler):
             
             return HttpResponse("The relationship was deleted",
                                 content_type='application/json')
-            
-
-# View used for confirming a user email using the confirmation key
-def confirm_email(request, confirmation_key):
-    confirmation_key = confirmation_key.lower()
-    
-    email_address = EmailConfirmation.objects.confirm_email(confirmation_key)
-    
-    template = None
-    try: # try to get customized template
-        template = get_template("emailconfirmation/confirm_email.html")
-    except TemplateDoesNotExist: # get default template
-        template = get_template("emailconfirmation/default_confirm_template.html")
-        
-    # the template will handle the invalid confirmation key
-    # if the confirmation key was invalid the email_address object is None
-    return HttpResponse(template.render(RequestContext(request,
-                                                       {"email_address": email_address})))
-    
 
 def supported_fields(request):
     """
@@ -275,6 +253,7 @@ def supported_fields(request):
     """
     
     with_types = request.GET.get('types', 'false')
+    print with_types
     with_types = json.loads(with_types)
     
     distinct_persons = Person.objects.only('json_data__json_string').distinct()

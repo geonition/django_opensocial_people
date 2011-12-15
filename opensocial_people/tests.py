@@ -6,8 +6,6 @@ from django.contrib.auth.models import Permission
 from django.test import TestCase
 from django.test.client import Client
 from django.utils import simplejson as json
-from models import EmailAddress
-from models import EmailConfirmation
 from models import Relationship
 from models import Person
 
