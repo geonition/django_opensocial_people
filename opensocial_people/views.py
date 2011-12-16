@@ -95,7 +95,6 @@ class People(RequestHandler):
                                                            flat=True)
         
         person_objects = person_objects.filter(user__in = target_user_ids)
-        
         #if the tuser is given the tuser Person object should be returned
         if tuser and request.user.has_perm('opensocial_people.data_view'):
             person_objects = person_objects.filter(user__username = tuser)    
@@ -104,7 +103,6 @@ class People(RequestHandler):
             return HttpResponseForbidden("You are not permitted "
                                          "to make this request")
           
-        
         # handle the get parameters
         if getattr(settings, 'USE_MONGODB', False):
             
@@ -132,7 +130,8 @@ class People(RequestHandler):
                     spec[key] = value
                 
             if spec != {}:
-                mqs = JSON.mongodb.find(spec)
+                mqs = JSON.mongodb.find(spec,
+                                        collection='opensocial_people.person')
                 mqs = mqs.values_list('id', flat=True)
                 person_objects = person_objects.filter(json_data__id__in = mqs)
                 
@@ -253,7 +252,6 @@ def supported_fields(request):
     """
     
     with_types = request.GET.get('types', 'false')
-    print with_types
     with_types = json.loads(with_types)
     
     distinct_persons = Person.objects.only('json_data__json_string').distinct()

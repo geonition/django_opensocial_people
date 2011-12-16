@@ -130,7 +130,7 @@ class PeopleTest(TestCase):
                           'Last1',
                           'The first_name was not Last1 for user1')
         self.assertEquals(response_dict['email']['value'],
-                          'testa@test.com',
+                          'some@some.org',
                           'The email was not some@some.org for user1')
         
         #query other persons
@@ -273,6 +273,7 @@ class PeopleTest(TestCase):
         #should only return user1
         url = "%s%s" % (reverse('people'), "/@all/@self?age=25")
         response = self.client.get(url)
+        
         self.assertContains(response,
                             '"username": "user1"',
                             status_code = 200)
@@ -526,15 +527,12 @@ class PeopleTest(TestCase):
         
         self.assertEquals(json.loads(response.content),
                           ["username",
-                           "last_name",
-                           "time.create_time",
-                           "email.primary",
-                           "email.value",
-                           "email.type",
-                           "id",
-                           "email.verified",
                            "first_name",
+                           "last_name",
                            "displayName",
+                           "time.create_time",
+                           "email.value",
+                           "id",
                            "time.expire_time",
                            "email"],
                           "The supported fields returned was not correct")
@@ -546,174 +544,14 @@ class PeopleTest(TestCase):
                           {"username": "string",
                            "last_name": "string",
                            "time.create_time": "string",
-                           "email.primary": True,
                            "email.value": "string",
-                           "email.type": "string",
                            "id": "string",
-                           "email.verified": True,
                            "first_name": "string",
                            "displayName": "string",
                            "time.expire_time": "string",
                            "email": "object"},
                           "The supported field types returned was not correct")
     
-    def test_email(self):
-        url = "%s%s" % (reverse('people'), "/@me/@self")
-        self.client.login(username='user7', password='user7')
-        mail.outbox = []
-        
-        #test with email in opensocial format
-        values = {
-            'email': {
-                'value': u'test1@test.com',
-                'primary': True
-            }
-        }
-        response = self.client.put(url,
-                                   data=json.dumps(values),
-                                   content_type='application/json')
-        
-        self.assertEquals(json.loads(response.content).has_key('email'),
-                          True,
-                          'no email was found from response')
-        
-        #not confirmed yet, should return empty email
-        self.assertEquals(json.loads(response.content)['email'],
-                          {u'primary': True,
-                           u'type': u'',
-                           u'value': u'test1@test.com',
-                           u'verified': False},
-                          'the email object was not correct')
-        
-        #one confirmation email should have been sent
-        self.assertEquals(len(mail.outbox),
-                          1,
-                          'The email saving did not send a confirmation email')
-        self.assertEquals('test1@test.com',
-                          mail.outbox[0].to[0],
-                          'The email sent did not go to the right address')
-        
-        #confirm and try again
-        email_address = EmailAddress.objects.get(email = "test1@test.com")
-        email_confirmation = EmailConfirmation.objects.get(email_address = email_address)
-
-        response = self.client.get(reverse('api_emailconfirmation',
-                                           args=[email_confirmation.confirmation_key]))
-        
-        response = self.client.get(url)
-        
-        self.assertEquals(json.loads(response.content)['email'],
-                          {u'value': u'test1@test.com',
-                           u'primary': True,
-                           u'type': u'',
-                           u'verified': True},
-                          'wrong email found from response')
-        
-        #test changing email in invalid format
-        values = {
-            'email': 'test2@test.com'
-        }
-        
-        response = self.client.put(url,
-                                   data=json.dumps(values),
-                                   content_type='application/json')
-        
-        self.assertEquals(json.loads(response.content).has_key('email'),
-                          True,
-                          'no email was found from response')
-        
-        self.assertEquals(json.loads(response.content)['email'],
-                          {u'value': u'test1@test.com',
-                           u'primary': True,
-                           u'type': u'',
-                           u'verified': True},
-                          'the wrong email was found from response')
-        
-        #two confirmation emails should have been sent
-        self.assertEquals(len(mail.outbox),
-                          2,
-                          'The email saving did not send a confirmation email')
-        self.assertEquals('test2@test.com',
-                          mail.outbox[1].to[0],
-                          'The email sent did not go to the right address')
-        
-        #confirm and try again
-        email_address = EmailAddress.objects.get(email = "test2@test.com")
-        email_confirmation = EmailConfirmation.objects.get(email_address = email_address)
-
-        response = self.client.get(reverse('api_emailconfirmation',
-                                           args=[email_confirmation.confirmation_key]))
-        
-        response = self.client.get(url)
-        
-        self.assertEquals(json.loads(response.content)['email'],
-                          {'value': 'test2@test.com',
-                           'primary': True,
-                           'type': '',
-                           'verified': True},
-                          'after confirmation the email was not changed')
-        
-        #test changing to empty email
-        values = {
-            'email': ''
-        }
-        response = self.client.put(url,
-                                   data=json.dumps(values),
-                                   content_type='application/json')
-        
-        self.assertEquals(json.loads(response.content).has_key('email'),
-                          True,
-                          'no email was found from response')
-        
-        self.assertEquals(json.loads(response.content)['email'],
-                          {u'value': u'',
-                           u'primary': False,
-                           u'type': u'',
-                           'verified': False},
-                          'empty email was not updated to empty')
-        
-        #test adding same email twice
-        values = {
-            'email': 'test2@test.com'
-        }
-        response = self.client.put(url,
-                                   data=json.dumps(values),
-                                   content_type='application/json')
-        response = self.client.put(url,
-                                   data=json.dumps(values),
-                                   content_type='application/json')
-        
-        #validate email
-        email_address = EmailAddress.objects.get(email = "test2@test.com")
-        email_confirmation = EmailConfirmation.objects.get(email_address = email_address)
-
-        response = self.client.get(reverse('api_emailconfirmation',
-                                args=[email_confirmation.confirmation_key]))
-        
-        response = self.client.get(url)
-        
-        
-        self.assertEquals(json.loads(response.content).has_key('email'),
-                          True,
-                          'no email was found from response')
-        
-        self.assertEquals(json.loads(response.content)['email'],
-                          {u'value': u'test2@test.com',
-                           u'primary': True,
-                           u'type': u'',
-                           u'verified': True},
-                          'no email was found from response')
-        
-        
-        #creating a user with email should send a confirmation email
-        mail.outbox = []
-        User.objects.create_user(username="hasanemail",
-                                 password="email",
-                                 email="very_unique@unique.com")
-        
-        self.assertEquals(len(mail.outbox),
-                          1,
-                          'email was not sent when creating a user')
         
     def tearDown(self):
         

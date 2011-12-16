@@ -200,7 +200,7 @@ def create_person(sender, instance, created, **kwargs):
                 "value": instance.email
             }
         }
-        json_obj = JSON(collection='opensocial_people_person',
+        json_obj = JSON(collection='opensocial_people.person',
                         json_string=json.dumps(default_person))
         json_obj.save()
         time_obj = TimeD()
