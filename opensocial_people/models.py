@@ -22,22 +22,22 @@ from random import random
 
 class Relationship(models.Model):
     """ The Relationship model describes a link between two users """
-    
+
     initial_user = models.ForeignKey(User, related_name='initial_user')
     group = models.CharField(max_length = 10)
     target_user = models.ForeignKey(User, related_name='target_user')
-    
-    
+
+
     def __unicode__(self):
         return u"%s -> %s -> %s" % (self.initial_user.username,
                                     self.group,
                                     self.target_user.username)
-        
+
     class Meta:
         unique_together = ('initial_user',
                            'group',
                            'target_user')
-        
+
 
 #this can be used instead of writing getattr everywhere
 USE_MONGODB = getattr(settings, "USE_MONGODB", False)
@@ -49,17 +49,17 @@ class Person(models.Model):
     """
     user = models.ForeignKey(User)
     json_data = models.ForeignKey(JSON)
-    time = models.ForeignKey(TimeD)       
-        
+    time = models.ForeignKey(TimeD)
+
     def update(self, json_string):
         """
         Updates this persons information.
-        
+
         If the new information is the same as the saved one
         then nothing is done, otherwise the old person is
         expired and a new person is created.
         """
-            
+
         json_dict = self.json()
         old_dict = deepcopy(json_dict)
         # this one throws an error if not valid json -->
@@ -70,66 +70,66 @@ class Person(models.Model):
             #set old feature as expired
             self.time.expire()
             self.save()
-            
+
             #check the values that should be updated in the user model
-            
+
             if json_dict.has_key('first_name'):
                 self.user.first_name = json_dict['first_name']
             if json_dict.has_key('last_name'):
                 self.user.last_name = json_dict['last_name']
-                
+
             #email handling
             person_email = json_dict.get('email', {})
-            
+
             try:
                 temp_person_email = person_email.get('value', '')
                 person_email = temp_person_email
             except AttributeError:
                 pass
-            
+
             if person_email == {}:
                 self.user.email = ''
             else:
                 self.user.email = person_email
-            
+
             self.json_data.remove_values(['first_name',
                                           'last_name',
                                           'email'])
-            
+
             #save the user
             self.user.save()
-            
+
             #save the new property
             new_json = JSON(collection='opensocial_people.person',
                             json_string=json.dumps(json_dict))
             new_json.save()
-            
+
             new_time = TimeD()
             new_time.save()
             new_person = Person(user = self.user,
                                 json_data = new_json,
                                 time = new_time)
             new_person.save()
-            
+
             return new_person
-        
+
         else:
             return self
-        
+
     def delete(self):
         self.time.expire()
-    
+
     def json(self):
         """
         This function returns a dictionary representation of this
         object
         """
-        
+
         try:
-        
+
             #default person includes django user values
             default_person = {
-                "id": self.user.username,
+                "id": self.user,
                 "displayName": self.user.username,
                 "first_name": self.user.first_name,
                 "last_name": self.user.last_name,
@@ -140,19 +140,19 @@ class Person(models.Model):
         except EmailAddress.DoesNotExist:
             #default person includes django user values
             default_person = {
-                "id": self.user.username,
+                "id": self.user,
                 "displayName": self.user.username,
                 "first_name": self.user.first_name,
                 "last_name": self.user.last_name,
                 "email": {
                     "value": ''
                 }
-            }    
-        
+            }
+
         json_data_dict = json.loads(self.json_data.json_string)
         json_data_dict.update(default_person)
         return json_data_dict
-    
+
     def get_fields(self):
         """
         This function returns a dictionary with keys and their
@@ -170,12 +170,12 @@ class Person(models.Model):
         fields = self.json_data.get_fields()
         fields.update(self.time.get_fields())
         fields.update(person_fields)
-        
+
         return fields
-        
+
     def __unicode__(self):
         return u'person obj for %s' % (self.user.username,)
-        
+
     class Meta:
         #does this really index the text field?
         unique_together = (("time", "json_data", "user"),)
@@ -189,7 +189,7 @@ def create_person(sender, instance, created, **kwargs):
     This signal is meant to create a person object
     when a new django user is created
     """
-    
+
     if created:
         default_person = {
             "id": instance.id,
@@ -205,11 +205,11 @@ def create_person(sender, instance, created, **kwargs):
         json_obj.save()
         time_obj = TimeD()
         time_obj.save()
-        
+
         Person(user=instance,
                json_data=json_obj,
                time=time_obj).save()
-        
+
         #create relationship for oneself
         Relationship(initial_user=instance,
                      group='@self',
