@@ -129,7 +129,7 @@ class Person(models.Model):
 
             #default person includes django user values
             default_person = {
-                "id": self.user,
+                "id": self.user.id,
                 "displayName": self.user.username,
                 "first_name": self.user.first_name,
                 "last_name": self.user.last_name,
@@ -140,7 +140,7 @@ class Person(models.Model):
         except EmailAddress.DoesNotExist:
             #default person includes django user values
             default_person = {
-                "id": self.user,
+                "id": self.user.id,
                 "displayName": self.user.username,
                 "first_name": self.user.first_name,
                 "last_name": self.user.last_name,
