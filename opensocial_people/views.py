@@ -28,8 +28,8 @@ class People(RequestHandler):
     
     def get_real_name(self,
                       request,
-                      username=None,
-                      groupname= None):
+                      username = None,
+                      groupname = None):
         """
         This function returns the real unique name for
         the generic name like @me or @self

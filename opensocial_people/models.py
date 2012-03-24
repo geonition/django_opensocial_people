@@ -124,30 +124,17 @@ class Person(models.Model):
         This function returns a dictionary representation of this
         object
         """
-        
-        try:
-        
-            #default person includes django user values
-            default_person = {
-                "id": self.user.id,
-                "displayName": self.user.username,
-                "first_name": self.user.first_name,
-                "last_name": self.user.last_name,
-                "email": {
-                    "value": self.user.email
-                }
+    
+        #default person includes django user values
+        default_person = {
+            "id": self.user.id,
+            "displayName": self.user.username,
+            "first_name": self.user.first_name,
+            "last_name": self.user.last_name,
+            "email": {
+                "value": self.user.email
             }
-        except EmailAddress.DoesNotExist:
-            #default person includes django user values
-            default_person = {
-                "id": self.user.username,
-                "displayName": self.user.username,
-                "first_name": self.user.first_name,
-                "last_name": self.user.last_name,
-                "email": {
-                    "value": ''
-                }
-            }    
+        }
         
         json_data_dict = json.loads(self.json_data.json_string)
         json_data_dict.update(default_person)
