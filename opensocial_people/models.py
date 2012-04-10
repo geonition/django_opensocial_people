@@ -167,7 +167,7 @@ class Person(models.Model):
         #does this really index the text field?
         unique_together = (("time", "json_data", "user"),)
         permissions = (
-            ("data_view", "Can view other's data"),
+            ("can_view_usernames", "Can view other's usernames and names"),
         )
 
 

@@ -11,11 +11,11 @@ from django.template import RequestContext
 from django.template import TemplateDoesNotExist
 from django.template.loader import get_template
 from django.utils import simplejson as json
-from geonition_utils.HttpResponseExtenders import HttpResponseBadRequest
-from geonition_utils.HttpResponseExtenders import HttpResponseNotImplemented
-from geonition_utils.HttpResponseExtenders import HttpResponseConflict
-from geonition_utils.HttpResponseExtenders import HttpResponseCreated
-from geonition_utils.HttpResponseExtenders import HttpResponseUnauthorized
+from geonition_utils.http import HttpResponseBadRequest
+from geonition_utils.http import HttpResponseNotImplemented
+from geonition_utils.http import HttpResponseConflict
+from geonition_utils.http import HttpResponseCreated
+from geonition_utils.http import HttpResponseUnauthorized
 from geonition_utils.models import JSON
 from geonition_utils.views import RequestHandler
 from models import Person
