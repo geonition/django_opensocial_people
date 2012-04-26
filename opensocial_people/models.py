@@ -124,31 +124,18 @@ class Person(models.Model):
         This function returns a dictionary representation of this
         object
         """
-
-        try:
-
-            #default person includes django user values
-            default_person = {
-                "id": self.user.id,
-                "displayName": self.user.username,
-                "first_name": self.user.first_name,
-                "last_name": self.user.last_name,
-                "email": {
-                    "value": self.user.email
-                }
+    
+        #default person includes django user values
+        default_person = {
+            "id": self.user.id,
+            "displayName": self.user.username,
+            "first_name": self.user.first_name,
+            "last_name": self.user.last_name,
+            "email": {
+                "value": self.user.email
             }
-        except EmailAddress.DoesNotExist:
-            #default person includes django user values
-            default_person = {
-                "id": self.user.id,
-                "displayName": self.user.username,
-                "first_name": self.user.first_name,
-                "last_name": self.user.last_name,
-                "email": {
-                    "value": ''
-                }
-            }
-
+        }
+        
         json_data_dict = json.loads(self.json_data.json_string)
         json_data_dict.update(default_person)
         return json_data_dict
@@ -180,7 +167,7 @@ class Person(models.Model):
         #does this really index the text field?
         unique_together = (("time", "json_data", "user"),)
         permissions = (
-            ("data_view", "Can view other's data"),
+            ("can_view_usernames", "Can view other's usernames and names"),
         )
 
 
@@ -200,7 +187,7 @@ def create_person(sender, instance, created, **kwargs):
                 "value": instance.email
             }
         }
-        json_obj = JSON(collection='opensocial_people_person',
+        json_obj = JSON(collection='opensocial_people.person',
                         json_string=json.dumps(default_person))
         json_obj.save()
         time_obj = TimeD()
