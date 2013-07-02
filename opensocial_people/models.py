@@ -15,7 +15,7 @@ from django.db.models.signals import pre_save
 from django.dispatch import Signal
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
-from django.utils.hashcompat import sha_constructor
+from hashlib import sha1 as sha_constructor
 from geonition_utils.models import JSON
 from geonition_utils.models import TimeD
 from random import random

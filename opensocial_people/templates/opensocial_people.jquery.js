@@ -1,3 +1,4 @@
+{% load url from future %}
 
 gnt['opensocial_people'] = {};
 
@@ -16,7 +17,7 @@ gnt.opensocial_people['get_list_of_persons'] =
 function(user, group, callback_function) {
     
     $.ajax({
-        url: "{% url people %}/" + user + "/" + group,
+        url: "{% url 'people' %}/" + user + "/" + group,
         type: "GET",
         contentType: "application/json",
         success: function(data, textStatus, jqXHR){
@@ -62,7 +63,7 @@ gnt.opensocial_people['update_person'] =
 function(user, person_object, callback_function) {
     
     $.ajax({
-        url: "{% url people %}/" + user + "/@self",
+        url: "{% url 'people' %}/" + user + "/@self",
         type: "PUT",
         data: JSON.stringify(person_object),
         contentType: "application/json",
@@ -99,7 +100,7 @@ function(with_values, callback_function) {
         with_values = false;
     }
     $.ajax({
-        url: "{% url people %}/@supportedFields?types=" + with_values,
+        url: "{% url 'people' %}/@supportedFields?types=" + with_values,
         type: "GET",
         contentType: "application/json",
         success: function(data, textStatus, jqXHR){
@@ -130,7 +131,7 @@ function(initial_user,
          callback_function) {
     
     $.ajax({
-        url: "{% url people %}/" + initial_user + "/" + group,
+        url: "{% url 'people' %}/" + initial_user + "/" + group,
         type: "POST",
         data: JSON.stringify(target_user_person_object),
         contentType: "application/json",
@@ -163,7 +164,7 @@ function(initial_user,
          callback_function) {
     
     $.ajax({
-        url: "{% url people %}/" + initial_user + "/" + group + "/" + target_user,
+        url: "{% url 'people' %}/" + initial_user + "/" + group + "/" + target_user,
         type: "DELETE",
         contentType: "application/json",
         success: function(data, textStatus, jqXHR){
